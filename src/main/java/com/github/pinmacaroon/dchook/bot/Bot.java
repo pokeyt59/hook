@@ -1,8 +1,10 @@
 package com.github.pinmacaroon.dchook.bot;
 
+import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.bot.event.MessageReceivedListener;
 import com.github.pinmacaroon.dchook.bot.event.ReadyEventListener;
 import com.github.pinmacaroon.dchook.bot.event.SlashCommandInteractionListener;
+import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
@@ -41,8 +43,7 @@ public class Bot {
         }
         this.JDA = jda;
 
-        this.JDA.getPresence().setActivity(Activity.of(Activity.ActivityType.WATCHING,
-                "over this server (literally 1984)"));
+        this.JDA.getPresence().setActivity(configuredActivity());
 
         CommandListUpdateAction commands = this.JDA.updateCommands().addCommands(
                 Commands.slash("time", "Check time and weather in the overworld")
@@ -90,6 +91,23 @@ public class Bot {
         );
 
         commands.queue();
+    }
+
+    private static Activity configuredActivity() {
+        String text = ModConfigs.FUNCTIONS_BOT_STATUS_TEXT;
+        Activity.ActivityType type = switch (ModConfigs.FUNCTIONS_BOT_STATUS_TYPE.strip().toLowerCase()) {
+            case "none" -> null;
+            case "playing" -> Activity.ActivityType.PLAYING;
+            case "watching" -> Activity.ActivityType.WATCHING;
+            case "listening" -> Activity.ActivityType.LISTENING;
+            case "competing" -> Activity.ActivityType.COMPETING;
+            case "custom" -> Activity.ActivityType.CUSTOM_STATUS;
+            default -> {
+                Hook.LOGGER.warn("unknown bot status type '{}', using watching", ModConfigs.FUNCTIONS_BOT_STATUS_TYPE);
+                yield Activity.ActivityType.WATCHING;
+            }
+        };
+        return (type == null || text.isBlank()) ? null : Activity.of(type, text);
     }
 
     public JDA getJDA() {
