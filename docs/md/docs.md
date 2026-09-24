@@ -107,6 +107,9 @@ Only builds for the Minecraft version the server runs are picked. With `function
 downloaded in the background, checked against GitHub's SHA-256, and swapped into the `mods` folder when the server
 stops, so it's active after the next start. Without it, the server log just links the new jar.
 
+Every CI build gets its own patch number: the number of commits since `mod_version` last changed in
+`gradle.properties` (`1.3.0` → `1.3.1` → `1.3.2` …). Edit `mod_version` to start a new minor or major version.
+
 ## Setup
 
 There are two "modes" in which the mod can operate: one-way and two-way. The former is simpler to set up and less resource heavy, while the latter one is "cooler".
