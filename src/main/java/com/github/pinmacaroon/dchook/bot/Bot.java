@@ -6,6 +6,7 @@ import com.github.pinmacaroon.dchook.bot.event.SlashCommandInteractionListener;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.SelfUser;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
@@ -14,6 +15,7 @@ import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
+import net.dv8tion.jda.api.utils.messages.MessageRequest;
 
 import java.util.EnumSet;
 
@@ -23,6 +25,8 @@ public class Bot {
     private long CHANNEL_ID;
 
     public Bot(String token) {
+        // replies echo player and mod names, never let them turn into pings
+        MessageRequest.setDefaultMentions(EnumSet.noneOf(Message.MentionType.class));
         net.dv8tion.jda.api.JDA jda;
         jda = JDABuilder.createLight(token, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
                 .addEventListeners(new ReadyEventListener(this))
