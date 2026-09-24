@@ -52,6 +52,9 @@ public class Bot {
                 Commands.slash("mods", "Check what mods are in the server, if any")
                         .addOptions(new OptionData(
                                         OptionType.BOOLEAN, "ephemeral", "Should the message be only visible to you?"
+                                ).setRequired(false),
+                                new OptionData(
+                                        OptionType.BOOLEAN, "full", "List every mod, even if it takes multiple messages"
                                 ).setRequired(false)
                         )
                         .setContexts(InteractionContextType.GUILD)

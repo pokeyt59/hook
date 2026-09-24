@@ -3,10 +3,13 @@ package com.github.pinmacaroon.dchook.bot.commands;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
+import net.dv8tion.jda.api.requests.RestAction;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class ModsCommand {
@@ -30,6 +33,17 @@ public class ModsCommand {
         } else {
             response = MessageFormat.format(ModConfigs.MESSAGES_BOT_MODS_LIST, mods_count.get()) + "\n" + mod_list;
         }
+        boolean ephemeral = event.getOption("ephemeral", false, OptionMapping::getAsBoolean);
+        if (event.getOption("full", false, OptionMapping::getAsBoolean) && response.length() > 2000) {
+            List<String> messages = splitMessages(response);
+            // chain the follow-ups so they arrive in order after the first reply
+            RestAction<?> action = event.reply(messages.getFirst()).setEphemeral(ephemeral);
+            for (String message : messages.subList(1, messages.size())) {
+                action = action.flatMap(ignored -> event.getHook().sendMessage(message).setEphemeral(ephemeral));
+            }
+            action.queue();
+            return;
+        }
         if (response.length() > 2000) {
             // cut at the last whole line that fits, discord messages are capped at 2000 characters
             String[] lines = response.split("\n");
@@ -42,6 +56,22 @@ public class ModsCommand {
             response = shortened.append("\n...and ").append(lines.length - shown).append(" more").toString();
         }
 
-        event.reply(response).setEphemeral(event.getOption("ephemeral", false, OptionMapping::getAsBoolean)).queue();
+        event.reply(response).setEphemeral(ephemeral).queue();
+    }
+
+    // splits at line breaks into messages of at most 2000 characters, discord's message limit
+    private static List<String> splitMessages(String text) {
+        List<String> messages = new ArrayList<>();
+        StringBuilder current = new StringBuilder();
+        for (String line : text.split("\n")) {
+            if (!current.isEmpty() && current.length() + 1 + line.length() > 2000) {
+                messages.add(current.toString());
+                current.setLength(0);
+            }
+            if (!current.isEmpty()) current.append('\n');
+            current.append(line.length() > 2000 ? line.substring(0, 2000) : line);
+        }
+        if (!current.isEmpty()) messages.add(current.toString());
+        return messages;
     }
 }
