@@ -4,10 +4,7 @@ import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.bot.commands.*;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.dv8tion.jda.api.utils.FileUpload;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.File;
 
 public class SlashCommandInteractionListener extends ListenerAdapter {
     private final Bot BOT;
@@ -28,9 +25,7 @@ public class SlashCommandInteractionListener extends ListenerAdapter {
             case "about" -> AboutCommand.run(event);
             default -> event.reply("""
                             An internal error occurred! Please send a bug report: \
-                            <https://github.com/pinmacaroon/hook/issues>""").setEphemeral(true)
-                    .addFiles(FileUpload.fromData(new File("https://pinmacaroon.github.io/hook/res/works.png")))
-                    .queue();
+                            <https://github.com/pinmacaroon/hook/issues>""").setEphemeral(true).queue();
         }
     }
 }
