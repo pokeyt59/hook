@@ -55,10 +55,13 @@ messages.server.starting.allowed=true
 | functions.promotions.enabled     | true                                          | false                    | are tips and hints/promotion embeds allowed to be sent to Discord                      |
 | functions.bot.enabled            | true                                          | false                    | is two-way chat (the bot) enabled?                                                     |
 | functions.bot.token              | "TOKEN"                                       | (blank string)           | bot token                                                                              |
+| functions.bot.status.type        | watching                                      | watching                 | bot status type: playing, watching, listening, competing, custom or none               |
+| functions.bot.status.text        | over this server (literally 1984)             | over this server (literally 1984) | bot status text                                                                        |
 | functions.update                 | true                                          | false                    | auto check for updates                                                                 |
 | functions.update.channel         | release                                       | release                  | `release` (tagged GitHub releases) or `alpha` (latest build from GitHub Actions)       |
 | functions.update.auto            | false                                         | false                    | download updates automatically and install them when the server stops                  |
 | functions.update.repo            | pokeyt59/hook                                 | pokeyt59/hook            | GitHub repository (owner/name) updates are downloaded from                             |
+| functions.timestamp.zone         | (blank string)                                | the server's time zone   | time zone for Discord timestamps shown in game, e.g. `Europe/Berlin` or `UTC`          |
 | webhook.url                      | <https://discord.com/api/webhooks/000/ABCDEF> | (blank string)           | url of webhook                                                                         |
 | messages.server.starting         | The server is starting!                       | messages.server.starting | start message                                                                          |
 | messages.server.stopped          | The server has been stopped!                  | messages.server.stopped  | stop message                                                                           |
