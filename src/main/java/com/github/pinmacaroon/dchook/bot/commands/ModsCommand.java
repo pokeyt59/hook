@@ -31,7 +31,15 @@ public class ModsCommand {
             response = MessageFormat.format(ModConfigs.MESSAGES_BOT_MODS_LIST, mods_count.get()) + "\n" + mod_list;
         }
         if (response.length() > 2000) {
-            response = response.substring(0, 1995) + "[...]";
+            // cut at the last whole line that fits, discord messages are capped at 2000 characters
+            String[] lines = response.split("\n");
+            StringBuilder shortened = new StringBuilder(lines[0]);
+            int shown = 1;
+            while (shown < lines.length
+                    && shortened.length() + 1 + lines[shown].length() + "\n...and 999 more".length() <= 2000) {
+                shortened.append('\n').append(lines[shown++]);
+            }
+            response = shortened.append("\n...and ").append(lines.length - shown).append(" more").toString();
         }
 
         event.reply(response).setEphemeral(event.getOption("ephemeral", false, OptionMapping::getAsBoolean)).queue();
