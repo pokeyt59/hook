@@ -59,6 +59,8 @@ public class Updater {
                 }
             };
             String repo = ModConfigs.FUNCTIONS_UPDATE_REPO.strip();
+            Hook.LOGGER.info("checking for dchook updates (channel: {}, auto install: {})",
+                    alpha ? "alpha" : "release", ModConfigs.FUNCTIONS_UPDATE_AUTO);
 
             JsonObject release = fetchRelease(repo, alpha ? "tags/alpha" : "latest");
             if (release == null) return;

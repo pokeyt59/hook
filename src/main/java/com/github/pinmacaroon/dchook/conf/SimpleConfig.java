@@ -123,10 +123,12 @@ public class SimpleConfig {
     }
 
     private void parseConfigEntry( String entry, int line ) {
+        // strip so stray spaces around "=", trailing spaces or windows line endings don't silently break a setting
+        entry = entry.strip();
         if( !entry.isEmpty() && !entry.startsWith( "#" ) ) {
             String[] parts = entry.split("=", 2);
             if( parts.length == 2 ) {
-                config.put( parts[0], parts[1] );
+                config.put( parts[0].strip(), parts[1].strip() );
             }else{
                 throw new RuntimeException("Syntax error in config file on line " + line + "!");
             }
