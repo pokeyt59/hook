@@ -3,6 +3,7 @@ package com.github.pinmacaroon.dchook.bot.event;
 import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.github.pinmacaroon.dchook.util.EventListeners;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
@@ -28,7 +29,15 @@ public class MessageReceivedListener extends ListenerAdapter {
             if (event.getMessage().getContentStripped().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
             MutableComponent message = renderMessage(event.getMessage());
             // JDA events arrive on JDA's threads, the player list must only be touched from the server thread
-            server.execute(() -> server.getPlayerList().broadcastSystemMessage(message, false));
+            server.execute(() -> {
+                // broadcasting fires GAME_MESSAGE, the flag keeps it from being relayed back to discord
+                EventListeners.RELAYING = true;
+                try {
+                    server.getPlayerList().broadcastSystemMessage(message, false);
+                } finally {
+                    EventListeners.RELAYING = false;
+                }
+            });
         }
     }
 

@@ -5,13 +5,17 @@ import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.network.chat.Component;
 
 import java.text.MessageFormat;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 public class EventListeners {
+    /**
+     * true while a discord message is being broadcast in game (server thread only), so GAME_MESSAGE
+     * doesn't send it straight back to discord
+     */
+    public static boolean RELAYING = false;
 
     public static void registerEventListeners(){
 
@@ -58,10 +62,11 @@ public class EventListeners {
                     "https://crafthead.net/helm/" + message.sender().toString());
         });
 
-        ServerMessageEvents.GAME_MESSAGE.register((server, text, b) -> {
-            if(Component.translatable(text.getString()).getString().startsWith("<")) return;
-
-            Webhook.sendText("game", "**"+Component.translatable(text.getString()).getString()+"**", null);
+        // GAME_MESSAGE is every system message sent to all players: joins, leaves, deaths, advancements,
+        // /say and friends, but also our own discord relays and action bar ("overlay") text
+        ServerMessageEvents.GAME_MESSAGE.register((server, text, overlay) -> {
+            if (overlay || RELAYING) return;
+            Webhook.sendText("game", "**" + MarkdownSanitizer.escape(text.getString()) + "**", null);
         });
     }
 
