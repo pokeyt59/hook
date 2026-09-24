@@ -5,7 +5,7 @@ import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
-import net.minecraft.text.Text;
+import net.minecraft.network.chat.Component;
 
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -107,12 +107,12 @@ public class EventListeners {
         });
 
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, parameters) -> {
-            if(message.getSignedContent().strip().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
+            if(message.signedContent().strip().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
 
             HashMap<String, String> request_body = new HashMap<>();
 
-            if(XaeoWaypoint.parse(message.getSignedContent())!=null){
-                XaeoWaypoint point = XaeoWaypoint.parse(message.getSignedContent());
+            if(XaeoWaypoint.parse(message.signedContent())!=null){
+                XaeoWaypoint point = XaeoWaypoint.parse(message.signedContent());
                 request_body.put("content", MessageFormat.format(
                         "*"+ModConfigs.MESSAGES_SERVER_WAYPOINT+"*",
                         point.name,
@@ -120,10 +120,10 @@ public class EventListeners {
                         point.x, point.y, point.z,
                         point.getDimension()
                 ));
-            } else request_body.put("content", MarkdownSanitizer.escape(message.getSignedContent()));
+            } else request_body.put("content", MarkdownSanitizer.escape(message.signedContent()));
 
             request_body.put("username", sender.getName().getString());
-            request_body.put("avatar_url", "https://crafthead.net/helm/" + message.getSender().toString());
+            request_body.put("avatar_url", "https://crafthead.net/helm/" + message.sender().toString());
 
             HttpRequest post = HttpRequest.newBuilder()
                     .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
@@ -139,10 +139,10 @@ public class EventListeners {
         });
 
         ServerMessageEvents.GAME_MESSAGE.register((server, text, b) -> {
-            if(Text.translatable(text.getString()).getString().startsWith("<")) return;
+            if(Component.translatable(text.getString()).getString().startsWith("<")) return;
 
             HashMap<String, String> request_body = new HashMap<>();
-            request_body.put("content", "**"+Text.translatable(text.getString()).getString()+"**");
+            request_body.put("content", "**"+Component.translatable(text.getString()).getString()+"**");
             request_body.put("username", "game");
 
             HttpRequest post = HttpRequest.newBuilder()

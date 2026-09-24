@@ -12,11 +12,11 @@ public class ListCommand {
         StringBuilder message = new StringBuilder();
         message.append(MessageFormat.format(
                 ModConfigs.MESSAGES_BOT_LIST,
-                Hook.getGameServer().getPlayerManager().getCurrentPlayerCount(),
-                Hook.getGameServer().getPlayerManager().getMaxPlayerCount()
+                Hook.getGameServer().getPlayerCount(),
+                Hook.getGameServer().getMaxPlayers()
         ));
-        Hook.getGameServer().getPlayerManager().getPlayerList().forEach(
-                serverPlayerEntity -> message.append("`").append(serverPlayerEntity.getName().getString()).append("` ")
+        Hook.getGameServer().getPlayerList().getPlayers().forEach(
+                serverPlayer -> message.append("`").append(serverPlayer.getName().getString()).append("` ")
         );
         event.reply(message.toString()).setEphemeral(event.getOption("ephemeral", false, OptionMapping::getAsBoolean))
                 .queue();

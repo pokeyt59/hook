@@ -10,6 +10,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.fabricmc.api.DedicatedServerModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,13 +31,9 @@ public class Hook implements DedicatedServerModInitializer {
     public static final Gson GSON = new GsonBuilder()
             .setPrettyPrinting()
             .create();
-    public static final Version VERSION = new Version.Builder()
-            .setMajorVersion(1)
-            .setMinorVersion(2)
-            .setPatchVersion(0)
-            .setBuildMetadata("fabric","1","21","1")
-//            .setPreReleaseVersion("newyear", "1")
-            .build();
+    // taken from fabric.mod.json, which gets it from mod_version in gradle.properties
+    public static final Version VERSION = Version.parse(FabricLoader.getInstance().getModContainer(MOD_ID)
+            .orElseThrow().getMetadata().getVersion().getFriendlyString());
     public static final String DOCS_URL = "https://modrinth.com/mod/dchook";
     public static final Random RANDOM = new Random(Instant.now().getEpochSecond());
     @SuppressWarnings("RegExpRedundantEscape")

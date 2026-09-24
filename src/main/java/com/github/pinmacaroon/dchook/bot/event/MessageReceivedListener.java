@@ -7,9 +7,9 @@ import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReference;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
-import net.minecraft.util.Formatting;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.server.MinecraftServer;
 import org.jetbrains.annotations.NotNull;
 
 public class MessageReceivedListener extends ListenerAdapter {
@@ -23,35 +23,39 @@ public class MessageReceivedListener extends ListenerAdapter {
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
         if (event.getGuild().getIdLong() != this.BOT.getGUILD_ID()) return;
         if (event.getMessage().getAuthor().isBot()) return;
-        if (event.getChannel().getIdLong() == this.BOT.getCHANNEL_ID() && Hook.getGameServer() != null) {
+        MinecraftServer server = Hook.getGameServer();
+        if (event.getChannel().getIdLong() == this.BOT.getCHANNEL_ID() && server != null) {
             if (event.getMessage().getContentStripped().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
-            Hook.getGameServer().getPlayerManager().broadcast(renderMessage(event.getMessage()), false);
+            MutableComponent message = renderMessage(event.getMessage());
+            // JDA events arrive on JDA's threads, the player list must only be touched from the server thread
+            server.execute(() -> server.getPlayerList().broadcastSystemMessage(message, false));
         }
     }
 
-    private static MutableText renderMessage(Message message) {
+    private static MutableComponent renderMessage(Message message) {
         final String raw_message = message.getContentDisplay();
-        MutableText signature;
-        MutableText reply;
-        MutableText content;
+        MutableComponent signature;
+        MutableComponent reply;
+        MutableComponent content;
 
         MessageReference r = message.getMessageReference();
         if (r != null) {
-            reply = Text.literal("<@%s -> ".formatted(
+            reply = Component.literal("<@%s -> ".formatted(
                     r.getMessage().getAuthor().getName()
             ));
         } else {
-            reply = Text.literal("<");
+            reply = Component.literal("<");
         }
 
-        signature = Text.literal("@%s> ".formatted(
+        signature = Component.literal("@%s> ".formatted(
                 message.getAuthor().getName()
         ));
 
         content = (raw_message.isBlank())
-                ? Text.literal("[embed]")
-                : Text.literal(raw_message);
+                ? Component.literal("[embed]")
+                : Component.literal(raw_message);
 
-        return reply.append(signature).append(content).formatted(Formatting.BLUE);
+        // 0x5555FF is the old Formatting.BLUE, ChatFormatting is being phased out in favour of Style colors
+        return reply.append(signature).append(content).withStyle(style -> style.withColor(0x5555FF));
     }
 }

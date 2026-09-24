@@ -1,5 +1,6 @@
 package com.github.pinmacaroon.dchook.bot.event;
 
+import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.bot.Bot;
 import net.dv8tion.jda.api.events.session.ReadyEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -12,6 +13,6 @@ public class ReadyEventListener extends ListenerAdapter {
 
     @Override
     public void onReady(@NotNull ReadyEvent event) {
-        System.out.println("Logged in as %s%s!");
+        Hook.LOGGER.info("Logged in as {}!", event.getJDA().getSelfUser().getName());
     }
 }
