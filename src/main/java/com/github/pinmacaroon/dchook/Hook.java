@@ -3,7 +3,7 @@ package com.github.pinmacaroon.dchook;
 import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import com.github.pinmacaroon.dchook.util.EventListeners;
-import com.github.pinmacaroon.dchook.util.VersionChecker;
+import com.github.pinmacaroon.dchook.util.Updater;
 import com.github.zafarkhaja.semver.Version;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -66,6 +66,9 @@ public class Hook implements DedicatedServerModInitializer {
             return;
         }
 
+        // before the webhook checks, so a broken webhook doesn't keep a fix from being installed
+        if(ModConfigs.FUNCTIONS_UPDATE) Updater.start();
+
         if(!WEBHOOK_URL_PATTERN.matcher(ModConfigs.WEBHOOK_URL).find()){
             LOGGER.error("webhook url was not a valid discord api endpoint, thus the mod cant operate!");
             return;
@@ -115,8 +118,6 @@ public class Hook implements DedicatedServerModInitializer {
             LOGGER.error("{}:{}", e.getClass().getName(), e.getMessage());
             throw new RuntimeException(e);
         }
-
-        if(ModConfigs.FUNCTIONS_UPDATE) VersionChecker.checkVersion();
 
         LOGGER.info("all checks succeeded, starting webhook managing! version: {}", VERSION);
         if(!ModConfigs.FUNCTIONS_PROMOTIONS_ENABLED){

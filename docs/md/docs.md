@@ -11,6 +11,7 @@
    1. [OOC Messages](#ooc-messages)
    2. [Two-Way Hook](#two-way-hook)
    3. [Xaero's World Map support](#xaeros-world-map-support)
+   4. [Updater](#updater)
 5. [Setup](#setup)
    1. [One-Way Mode](#one-way-mode)
    2. [Two-Way Mode](#two-way-mode)
@@ -55,6 +56,9 @@ messages.server.starting.allowed=true
 | functions.bot.enabled            | true                                          | false                    | is two-way chat (the bot) enabled?                                                     |
 | functions.bot.token              | "TOKEN"                                       | (blank string)           | bot token                                                                              |
 | functions.update                 | true                                          | false                    | auto check for updates                                                                 |
+| functions.update.channel         | release                                       | release                  | `release` (tagged GitHub releases) or `alpha` (latest build from GitHub Actions)       |
+| functions.update.auto            | false                                         | false                    | download updates automatically and install them when the server stops                  |
+| functions.update.repo            | pokeyt59/hook                                 | pokeyt59/hook            | GitHub repository (owner/name) updates are downloaded from                             |
 | webhook.url                      | <https://discord.com/api/webhooks/000/ABCDEF> | (blank string)           | url of webhook                                                                         |
 | messages.server.starting         | The server is starting!                       | messages.server.starting | start message                                                                          |
 | messages.server.stopped          | The server has been stopped!                  | messages.server.stopped  | stop message                                                                           |
@@ -91,6 +95,17 @@ Utility slash commands that you can use to do things like get player listing rig
 ### Xaero's World Map support
 
 [Xaero's World Map](https://modrinth.com/mod/xaeros-world-map) has a feature, with which you can share waypoints in chat for everyone to save and add. This will be converted to readable coordinates and dimension data when sent to Discord!
+
+### Updater
+
+When `functions.update` is on, the mod checks GitHub for a newer build on every start:
+
+- `release` channel: the latest GitHub release. Releases are made by pushing a tag like `v1.3.0`.
+- `alpha` channel: the rolling `alpha` pre-release, which GitHub Actions rebuilds on every push. It's unstable!
+
+Only builds for the Minecraft version the server runs are picked. With `functions.update.auto=true`, the update is
+downloaded in the background, checked against GitHub's SHA-256, and swapped into the `mods` folder when the server
+stops, so it's active after the next start. Without it, the server log just links the new jar.
 
 ## Setup
 

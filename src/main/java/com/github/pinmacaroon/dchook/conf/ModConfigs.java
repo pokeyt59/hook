@@ -28,6 +28,9 @@ public class ModConfigs {
     public static boolean FUNCTIONS_BOT_ENABLED;
     public static String FUNCTIONS_BOT_TOKEN;
     public static boolean FUNCTIONS_UPDATE;
+    public static String FUNCTIONS_UPDATE_CHANNEL;
+    public static boolean FUNCTIONS_UPDATE_AUTO;
+    public static String FUNCTIONS_UPDATE_REPO;
     private static ModConfigProvider configs;
 
     public static void registerConfigs() {
@@ -50,6 +53,9 @@ public class ModConfigs {
         configs.addKeyValuePair(new Pair<>("functions.bot.enabled", true), "is two-way chat (the bot) enabled?");
         configs.addKeyValuePair(new Pair<>("functions.bot.token", "TOKEN"), "bot token");
         configs.addKeyValuePair(new Pair<>("functions.update", true), "check for updates");
+        configs.addKeyValuePair(new Pair<>("functions.update.channel", "release"), "update channel: release (tagged github releases) or alpha (latest build from github actions, unstable!)");
+        configs.addKeyValuePair(new Pair<>("functions.update.auto", false), "download updates automatically and install them when the server stops");
+        configs.addKeyValuePair(new Pair<>("functions.update.repo", "pokeyt59/hook"), "github repository (owner/name) to get updates from");
         configs.addBlankLine();
 
         configs.addDocumentationLine("Configure Discord connection related parameters:");
@@ -108,6 +114,9 @@ public class ModConfigs {
         FUNCTIONS_BOT_TOKEN = CONFIG.getOrDefault("functions.bot.token", "");
 
         FUNCTIONS_UPDATE = CONFIG.getOrDefault("functions.update", false);
+        FUNCTIONS_UPDATE_CHANNEL = CONFIG.getOrDefault("functions.update.channel", "release");
+        FUNCTIONS_UPDATE_AUTO = CONFIG.getOrDefault("functions.update.auto", false);
+        FUNCTIONS_UPDATE_REPO = CONFIG.getOrDefault("functions.update.repo", "pokeyt59/hook");
 
         System.out.println("all " + configs.getConfigsList().size() + " have been set properly");
     }

@@ -6,9 +6,15 @@
 name: build
 on: [pull_request, push]
 
+# needed to publish the alpha pre-release and tagged releases
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
+    concurrency:
+      group: publish-${{ github.ref }}
     steps:
       - name: checkout repository
         uses: actions/checkout@v6
@@ -22,7 +28,7 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
-        run: ./gradlew build
+        run: ./gradlew build -Pbuild_commit=${{ github.sha }}
       - name: upload mod jar
         uses: actions/upload-artifact@v7
         with:
@@ -35,3 +41,22 @@ jobs:
         with:
           archive: false
           path: build/libs/*-sources.jar
+      # every pushed build becomes the rolling "alpha" pre-release, which the in-game updater can download without a token
+      - name: publish alpha
+        if: github.event_name == 'push' && github.ref_type == 'branch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jar=$(ls build/libs/*.jar | grep -v -- '-sources.jar$')
+          gh release delete alpha --yes --cleanup-tag || true
+          gh release create alpha "$jar" --prerelease --target "$GITHUB_SHA" \
+            --title "alpha (${GITHUB_REF_NAME}@${GITHUB_SHA::7})" \
+            --notes "Automatic build of ${GITHUB_REF_NAME}@${GITHUB_SHA}. Unstable, use at your own risk."
+      # pushing a tag like v1.3.0 publishes a normal release, used by the "release" update channel
+      - name: publish release
+        if: github.event_name == 'push' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          jar=$(ls build/libs/*.jar | grep -v -- '-sources.jar$')
+          gh release create "$GITHUB_REF_NAME" "$jar" --verify-tag --generate-notes

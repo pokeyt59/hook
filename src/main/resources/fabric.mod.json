@@ -23,5 +23,8 @@
 		"minecraft": "~26.2",
 		"java": ">=25",
 		"fabric-api": "*"
+	},
+	"custom": {
+		"dchook:commit": "${commit}"
 	}
 }
