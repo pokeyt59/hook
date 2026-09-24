@@ -3,6 +3,7 @@ package com.github.pinmacaroon.dchook.bot.event;
 import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.github.pinmacaroon.dchook.util.DiscordTimestamps;
 import com.github.pinmacaroon.dchook.util.EventListeners;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageReference;
@@ -12,6 +13,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.MinecraftServer;
 import org.jetbrains.annotations.NotNull;
+
+import java.time.Instant;
 
 public class MessageReceivedListener extends ListenerAdapter {
     private final Bot BOT;
@@ -42,7 +45,8 @@ public class MessageReceivedListener extends ListenerAdapter {
     }
 
     private static MutableComponent renderMessage(Message message) {
-        final String raw_message = message.getContentDisplay();
+        final String raw_message = DiscordTimestamps.render(message.getContentDisplay(),
+                ModConfigs.FUNCTIONS_TIMESTAMP_ZONE, Instant.now());
         MutableComponent signature;
         MutableComponent reply;
         MutableComponent content;
