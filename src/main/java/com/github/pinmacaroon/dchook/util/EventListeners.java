@@ -7,13 +7,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 import net.minecraft.network.chat.Component;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 public class EventListeners {
 
@@ -21,141 +17,59 @@ public class EventListeners {
 
         ServerLifecycleEvents.SERVER_STARTING.register(server -> {
             Hook.setMinecraftServer(server);
-            if (!ModConfigs.MESSAGES_SERVER_STARTING_ALLOWED) return;
-
-            HashMap<String, String> request_body = new HashMap<>();
-            request_body.put("content", "**"+ModConfigs.MESSAGES_SERVER_STARTING+"**");
-            request_body.put("username", "server");
-
-            HttpRequest post = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                    .uri(Hook.WEBHOOK_URI)
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            try {
-                Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            if (ModConfigs.MESSAGES_SERVER_STARTING_ALLOWED)
+                Webhook.sendText("server", "**" + ModConfigs.MESSAGES_SERVER_STARTING + "**", null);
         });
 
-        if (ModConfigs.MESSAGES_SERVER_STARTED_ALLOWED && ModConfigs.FUNCTIONS_PROMOTIONS_ENABLED)
-            ServerLifecycleEvents.SERVER_STARTED.register(server -> {
-                if (ModConfigs.MESSAGES_SERVER_STARTED_ALLOWED) {
-                    HashMap<String, String> request_body = new HashMap<>();
-                    request_body.put("content", "**"+ModConfigs.MESSAGES_SERVER_STARTED+"**");
-                    request_body.put("username", "server");
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            if (ModConfigs.MESSAGES_SERVER_STARTED_ALLOWED)
+                Webhook.sendText("server", "**" + ModConfigs.MESSAGES_SERVER_STARTED + "**", null);
+            if (ModConfigs.FUNCTIONS_PROMOTIONS_ENABLED) PromotionProvider.sendPromotion();
+        });
 
-                    HttpRequest post = HttpRequest.newBuilder()
-                            .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                            .uri(Hook.WEBHOOK_URI)
-                            .header("Content-Type", "application/json")
-                            .build();
-
-                    try {
-                        Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-                    } catch (InterruptedException | ExecutionException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-                if (ModConfigs.FUNCTIONS_PROMOTIONS_ENABLED) {
-                    PromotionProvider.sendPromotion(Hook.WEBHOOK_URI);
-                }
-            });
+        // the process may exit right after these, so wait (briefly) until discord got them
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            if (ModConfigs.MESSAGES_SERVER_STOPPING_ALLOWED)
+                awaitBriefly(Webhook.sendText("server", "**" + ModConfigs.MESSAGES_SERVER_STOPPING + "**", null));
+        });
 
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
-            if (ModConfigs.MESSAGES_SERVER_STOPPED_ALLOWED) {
-                HashMap<String, String> request_body = new HashMap<>();
-                request_body.put("content", "**" + ModConfigs.MESSAGES_SERVER_STOPPED + "**");
-                request_body.put("username", "server");
-
-                HttpRequest post = HttpRequest.newBuilder()
-                        .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                        .uri(Hook.WEBHOOK_URI)
-                        .header("Content-Type", "application/json")
-                        .build();
-
-                try {
-                    Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-                } catch (InterruptedException | ExecutionException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-
+            if (ModConfigs.MESSAGES_SERVER_STOPPED_ALLOWED)
+                awaitBriefly(Webhook.sendText("server", "**" + ModConfigs.MESSAGES_SERVER_STOPPED + "**", null));
             if(Hook.BOT != null) Hook.BOT.stop();
-        });
-
-        if (ModConfigs.MESSAGES_SERVER_STOPPING_ALLOWED) ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
-
-            HashMap<String, String> request_body = new HashMap<>();
-            request_body.put("content", "**"+ModConfigs.MESSAGES_SERVER_STOPPING+"**");
-            request_body.put("username", "server");
-
-            HttpRequest post = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                    .uri(Hook.WEBHOOK_URI)
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            try {
-                Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
         });
 
         ServerMessageEvents.CHAT_MESSAGE.register((message, sender, parameters) -> {
             if(message.signedContent().strip().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
 
-            HashMap<String, String> request_body = new HashMap<>();
-
-            if(XaeoWaypoint.parse(message.signedContent())!=null){
-                XaeoWaypoint point = XaeoWaypoint.parse(message.signedContent());
-                request_body.put("content", MessageFormat.format(
+            String content;
+            XaeoWaypoint point = XaeoWaypoint.parse(message.signedContent());
+            if(point != null){
+                content = MessageFormat.format(
                         "*"+ModConfigs.MESSAGES_SERVER_WAYPOINT+"*",
                         point.name,
                         point.marker,
                         point.x, point.y, point.z,
                         point.getDimension()
-                ));
-            } else request_body.put("content", MarkdownSanitizer.escape(message.signedContent()));
+                );
+            } else content = MarkdownSanitizer.escape(message.signedContent());
 
-            request_body.put("username", sender.getName().getString());
-            request_body.put("avatar_url", "https://crafthead.net/helm/" + message.sender().toString());
-
-            HttpRequest post = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                    .uri(Hook.WEBHOOK_URI)
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            try {
-                Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            Webhook.sendText(sender.getName().getString(), content,
+                    "https://crafthead.net/helm/" + message.sender().toString());
         });
 
         ServerMessageEvents.GAME_MESSAGE.register((server, text, b) -> {
             if(Component.translatable(text.getString()).getString().startsWith("<")) return;
 
-            HashMap<String, String> request_body = new HashMap<>();
-            request_body.put("content", "**"+Component.translatable(text.getString()).getString()+"**");
-            request_body.put("username", "game");
-
-            HttpRequest post = HttpRequest.newBuilder()
-                    .POST(HttpRequest.BodyPublishers.ofString(Hook.GSON.toJson(request_body)))
-                    .uri(Hook.WEBHOOK_URI)
-                    .header("Content-Type", "application/json")
-                    .build();
-
-            try {
-                Hook.HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get().body();
-            } catch (InterruptedException | ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            Webhook.sendText("game", "**"+Component.translatable(text.getString()).getString()+"**", null);
         });
+    }
+
+    private static void awaitBriefly(CompletableFuture<Void> send) {
+        try {
+            send.orTimeout(5, TimeUnit.SECONDS).join();
+        } catch (Exception e) {
+            Hook.LOGGER.warn("discord didn't confirm the message in time: {}", e.toString());
+        }
     }
 }

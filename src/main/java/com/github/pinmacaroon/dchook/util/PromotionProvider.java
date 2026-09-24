@@ -4,15 +4,9 @@ import com.github.pinmacaroon.dchook.Hook;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
-import java.net.URI;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.concurrent.ExecutionException;
-
-import static com.github.pinmacaroon.dchook.Hook.*;
 
 public class PromotionProvider {
     private static JsonObject mcfetchEmbed = new JsonObject();
@@ -206,31 +200,15 @@ public class PromotionProvider {
 
     /**
      * @param embeds {@link JsonArray} of {@link JsonObject} which are discord embeds
-     * @param webhook {@link URI} of the webhook api endpoint
      */
-    private static void sendPromotionMessageAPIRequest(JsonArray embeds, URI webhook){
+    private static void sendPromotionMessageAPIRequest(JsonArray embeds){
         JsonObject request_body = new JsonObject();
         request_body.addProperty("username", "promotion");
         request_body.add("embeds", embeds);
-
-        HttpRequest post = HttpRequest.newBuilder()
-                .POST(HttpRequest.BodyPublishers.ofString(request_body.toString()))
-                .uri(webhook)
-                .header("Content-Type", "application/json")
-                .build();
-
-        try {
-            HTTPCLIENT.sendAsync(post, HttpResponse.BodyHandlers.ofString()).get();
-        } catch (InterruptedException | ExecutionException e) {
-            LOGGER.warn(e.getMessage());
-            throw new RuntimeException(e);
-        }
+        Webhook.send(request_body);
     }
 
-    /**
-     * @param webhook {@link URI} of the webhook api endpoint
-     */
-    public static void sendPromotion(URI webhook){
+    public static void sendPromotion(){
         JsonObject promotion = switch (Hook.RANDOM.nextInt(0, 10)) {
             case 0 -> mcfetchEmbed;
             case 1 -> skinfetchEmbed;
@@ -244,6 +222,6 @@ public class PromotionProvider {
         if(promotion == null) return;
         JsonArray promotions = new JsonArray();
         promotions.add(promotion);
-        sendPromotionMessageAPIRequest(promotions, webhook);
+        sendPromotionMessageAPIRequest(promotions);
     }
 }
