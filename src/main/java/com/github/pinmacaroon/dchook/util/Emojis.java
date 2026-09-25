@@ -12,7 +12,11 @@ import java.util.regex.Pattern;
  */
 public class Emojis {
     // :name: not glued to other text, so times (12:30:45) and things like a:b:c stay as they are
-    // an emoji the sender can't use natively (from another server) arrives as a link to its image
+    // an emoji the sender can't use natively (another server's, sent with e.g. vencord's fakenitro) arrives as a link
+    // to its image, either [name](link) or the bare link, whose name= parameter (if any) holds the name
+    private static final Pattern BARE_EMOJI_LINK = Pattern.compile(
+            "<?https://(?:cdn|media)\\.discordapp\\.(?:com|net)/emojis/\\d+\\.\\w+(\\?[^\\s>]*)?>?");
+    private static final Pattern NAME_PARAMETER = Pattern.compile("[?&]name=([\\w~-]{1,64})");
     private static final Pattern EMOJI_LINK = Pattern.compile(
             "\\[([^\\]\\n]{1,64})\\]\\(<?https://(?:cdn|media)\\.discordapp\\.(?:com|net)/emojis/\\d+\\.\\w+[^)\\s]*>?\\)");
     private static final Pattern SHORTCODE = Pattern.compile("(?<!\\w):([a-z0-9_+\\-]+):(?!\\w)");
@@ -31,6 +35,10 @@ public class Emojis {
         if (text.contains("/emojis/")) {
             text = EMOJI_LINK.matcher(text).replaceAll(match -> Matcher.quoteReplacement(
                     ":" + match.group(1).replace(":", "") + ":"));
+            text = BARE_EMOJI_LINK.matcher(text).replaceAll(match -> {
+                Matcher name = NAME_PARAMETER.matcher(match.group(1) == null ? "" : match.group(1));
+                return Matcher.quoteReplacement(name.find() ? ":" + name.group(1) + ":" : ":emoji:");
+            });
         }
         if (!EmojiManager.containsAnyEmoji(text)) return text;
         return EmojiManager.replaceAllEmojis(text, Emojis::shortcode);
