@@ -35,6 +35,7 @@ public class ModConfigs {
     public static String FUNCTIONS_BOT_STATUS_TYPE;
     public static String FUNCTIONS_BOT_STATUS_TEXT;
     public static ZoneId FUNCTIONS_TIMESTAMP_ZONE;
+    public static boolean FUNCTIONS_EMOJI_SHORTCODES;
     public static boolean FUNCTIONS_UPDATE;
     public static String FUNCTIONS_UPDATE_CHANNEL;
     public static boolean FUNCTIONS_UPDATE_AUTO;
@@ -64,6 +65,7 @@ public class ModConfigs {
         configs.addKeyValuePair(new Pair<>("functions.bot.status.type", "watching"), "bot status type: playing, watching, listening, competing, custom or none");
         configs.addKeyValuePair(new Pair<>("functions.bot.status.text", "over this server (literally 1984)"), "bot status text");
         configs.addKeyValuePair(new Pair<>("functions.timestamp.zone", ""), "time zone for discord timestamps shown in game, e.g. Europe/Berlin or UTC. empty uses the server's zone");
+        configs.addKeyValuePair(new Pair<>("functions.emoji.shortcodes", true), "show discord emojis as :name: in game (minecraft can't draw most of them), and turn :name: typed in game into the emoji on discord");
         configs.addKeyValuePair(new Pair<>("functions.update", true), "check for updates");
         configs.addKeyValuePair(new Pair<>("functions.update.channel", "release"), "update channel: release (tagged github releases) or alpha (latest build from github actions, unstable!)");
         configs.addKeyValuePair(new Pair<>("functions.update.auto", false), "download updates automatically and install them when the server stops");
@@ -143,6 +145,8 @@ public class ModConfigs {
             Hook.LOGGER.warn("unknown time zone '{}' in functions.timestamp.zone, using the server's zone", zone);
             FUNCTIONS_TIMESTAMP_ZONE = ZoneId.systemDefault();
         }
+
+        FUNCTIONS_EMOJI_SHORTCODES = CONFIG.getOrDefault("functions.emoji.shortcodes", true);
 
         FUNCTIONS_UPDATE = CONFIG.getOrDefault("functions.update", false);
         FUNCTIONS_UPDATE_CHANNEL = CONFIG.getOrDefault("functions.update.channel", "release");

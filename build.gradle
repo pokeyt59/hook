@@ -46,6 +46,8 @@ dependencies {
 		exclude module: 'tink' // required for encrypting and decrypting audio
 	}
 	extraLibs group: 'com.github.zafarkhaja', name: 'java-semver', version: '0.10.2'
+	// emoji <-> :shortcode: conversion, 1.x because 2.x pulls in a second copy of jackson
+	extraLibs group: 'net.fellbaum', name: 'jemoji', version: '1.7.6'
 	extraLibs group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
 
 	configurations.implementation.extendsFrom(configurations.extraLibs)

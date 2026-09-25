@@ -4,6 +4,7 @@ import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import com.github.pinmacaroon.dchook.util.DiscordTimestamps;
+import com.github.pinmacaroon.dchook.util.Emojis;
 import com.github.pinmacaroon.dchook.util.EventListeners;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.messages.MessageSnapshot;
@@ -104,6 +105,7 @@ public class MessageReceivedListener extends ListenerAdapter {
     private static void addParts(List<Component> parts, String text, List<Message.Attachment> attachments,
                                  List<StickerItem> stickers) {
         String content = DiscordTimestamps.render(text, ModConfigs.FUNCTIONS_TIMESTAMP_ZONE, Instant.now());
+        if (ModConfigs.FUNCTIONS_EMOJI_SHORTCODES) content = Emojis.toShortcodes(content);
         if (!content.isBlank()) parts.add(Component.literal(content));
         for (Message.Attachment attachment : attachments) {
             String kind = attachment.isImage() ? "image" : attachment.isVideo() ? "video" : "file";

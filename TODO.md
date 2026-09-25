@@ -4,10 +4,10 @@ This file is basically a checklist of things to do in the codebase.
 
 ## Chores
 
-* show unicode emojis (😀) as `:shortcode:` in game, minecraft's font can't draw most of them
 
 ## Done
 
+* emojis: 😀 shows as `:grinning:` in game, `:grinning:` typed in game shows as 😀 on discord (`functions.emoji.shortcodes`)
 * the `/time` reply and its weather words are configurable (`messages.bot.time*`)
 * discord custom emojis (`<:name:id>`) show up as `:name:` in game (JDA's `getContentDisplay` already does it,
   forwarded messages are converted by hand)

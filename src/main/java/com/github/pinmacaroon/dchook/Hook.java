@@ -2,6 +2,7 @@ package com.github.pinmacaroon.dchook;
 
 import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.github.pinmacaroon.dchook.util.Emojis;
 import com.github.pinmacaroon.dchook.util.EventListeners;
 import com.github.pinmacaroon.dchook.util.Updater;
 import com.github.pinmacaroon.dchook.util.Webhook;
@@ -93,6 +94,7 @@ public class Hook implements DedicatedServerModInitializer {
     }
 
     private static void connectToDiscord() {
+        if (ModConfigs.FUNCTIONS_EMOJI_SHORTCODES) Emojis.preload();
         JsonObject webhook;
         try {
             HttpRequest get_webhook = HttpRequest.newBuilder()

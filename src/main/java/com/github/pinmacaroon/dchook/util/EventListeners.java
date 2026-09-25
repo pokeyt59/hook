@@ -56,7 +56,11 @@ public class EventListeners {
                         point.x, point.y, point.z,
                         point.getDimension()
                 );
-            } else content = MarkdownSanitizer.escape(message.signedContent());
+            } else {
+                String text = message.signedContent();
+                if (ModConfigs.FUNCTIONS_EMOJI_SHORTCODES) text = Emojis.fromShortcodes(text);
+                content = MarkdownSanitizer.escape(text);
+            }
 
             Webhook.sendText(sender.getName().getString(), content,
                     "https://crafthead.net/helm/" + message.sender().toString());
