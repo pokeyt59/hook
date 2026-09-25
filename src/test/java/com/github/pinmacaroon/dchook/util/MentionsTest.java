@@ -30,6 +30,32 @@ class MentionsTest {
     }
 
     @Test
+    void lookupsPerMessageAreCapped() {
+        java.util.concurrent.atomic.AtomicInteger lookups = new java.util.concurrent.atomic.AtomicInteger();
+        StringBuilder text = new StringBuilder();
+        for (int i = 0; i < 20; i++) text.append("@name").append(i).append(' ');
+        text.append("@pokey @Pokey");
+        Set<Long> pinged = new LinkedHashSet<>();
+        String result = Mentions.resolve(text.toString(), name -> {
+            lookups.incrementAndGet();
+            return MEMBERS.get(name.toLowerCase());
+        }, pinged);
+        assertEquals(Mentions.MAX_LOOKUPS, lookups.get());
+        assertEquals(text.toString(), result);
+    }
+
+    @Test
+    void repeatedNamesAreLookedUpOnce() {
+        java.util.concurrent.atomic.AtomicInteger lookups = new java.util.concurrent.atomic.AtomicInteger();
+        Set<Long> pinged = new LinkedHashSet<>();
+        assertEquals("<@11> <@11>", Mentions.resolve("@pokey @Pokey", name -> {
+            lookups.incrementAndGet();
+            return MEMBERS.get(name.toLowerCase());
+        }, pinged));
+        assertEquals(1, lookups.get());
+    }
+
+    @Test
     void unknownAndNonMentionsStay() {
         Set<Long> pinged = new LinkedHashSet<>();
         for (String text : new String[]{"@nobody here", "me@pokey.com", "@​everyone", "@", "@@pokey", "a @x b"}) {

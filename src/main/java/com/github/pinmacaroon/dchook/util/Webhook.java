@@ -131,18 +131,24 @@ public class Webhook {
             }
 
             for (List<Pending> group : merge(batch)) {
-                JsonObject body = group.getFirst().body();
-                JsonArray pinged = new JsonArray();
-                for (Pending pending : group) {
-                    JsonElement ids = pending.body().remove(PINGED);
-                    if (ids != null) ids.getAsJsonArray().forEach(id -> { if (!pinged.contains(id)) pinged.add(id); });
+                try {
+                    JsonObject body = group.getFirst().body();
+                    JsonArray pinged = new JsonArray();
+                    for (Pending pending : group) {
+                        JsonElement ids = pending.body().remove(PINGED);
+                        if (ids != null) ids.getAsJsonArray().forEach(id -> { if (!pinged.contains(id)) pinged.add(id); });
+                    }
+                    for (Pending other : group.subList(1, group.size())) {
+                        body.addProperty("content", body.get("content").getAsString() + "\n"
+                                + other.body().get("content").getAsString());
+                    }
+                    post(withoutMentions(body, pinged));
+                } catch (Exception e) {
+                    // this thread is the only one sending, it must survive anything a single message does
+                    Hook.LOGGER.warn("couldn't send a webhook message: {}", e.toString());
+                } finally {
+                    group.forEach(pending -> pending.done().complete(null));
                 }
-                for (Pending other : group.subList(1, group.size())) {
-                    body.addProperty("content", body.get("content").getAsString() + "\n"
-                            + other.body().get("content").getAsString());
-                }
-                post(withoutMentions(body, pinged));
-                group.forEach(pending -> pending.done().complete(null));
             }
         }
     }

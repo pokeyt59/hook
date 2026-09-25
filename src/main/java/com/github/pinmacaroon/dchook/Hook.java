@@ -94,7 +94,6 @@ public class Hook implements DedicatedServerModInitializer {
     }
 
     private static void connectToDiscord() {
-        if (ModConfigs.FUNCTIONS_EMOJI_SHORTCODES) Emojis.preload();
         JsonObject webhook;
         try {
             HttpRequest get_webhook = HttpRequest.newBuilder()
@@ -124,11 +123,10 @@ public class Hook implements DedicatedServerModInitializer {
 
         if (ModConfigs.FUNCTIONS_BOT_ENABLED) {
             try {
-                Bot bot = new Bot(ModConfigs.FUNCTIONS_BOT_TOKEN);
-                bot.setGUILD_ID(webhook.get("guild_id").getAsLong());
-                bot.setCHANNEL_ID(ModConfigs.IS_THREAD
-                        ? Long.parseLong(ModConfigs.THREAD_ID)
-                        : webhook.get("channel_id").getAsLong());
+                Bot bot = new Bot(ModConfigs.FUNCTIONS_BOT_TOKEN, webhook.get("guild_id").getAsLong(),
+                        ModConfigs.IS_THREAD
+                                ? Long.parseLong(ModConfigs.THREAD_ID)
+                                : webhook.get("channel_id").getAsLong());
                 bot.checkChannel();
                 BOT = bot;
                 // the server may have stopped while the bot was logging in
@@ -141,5 +139,14 @@ public class Hook implements DedicatedServerModInitializer {
         }
 
         LOGGER.info("all checks succeeded, starting webhook managing! version: {}", VERSION);
+
+        // after the webhook is ready, so loading the emoji table never holds up messages
+        if (ModConfigs.FUNCTIONS_EMOJI_SHORTCODES) {
+            try {
+                Emojis.preload();
+            } catch (Throwable e) {
+                LOGGER.warn("couldn't load the emoji table, emojis stay as they are: {}", e.toString());
+            }
+        }
     }
 }

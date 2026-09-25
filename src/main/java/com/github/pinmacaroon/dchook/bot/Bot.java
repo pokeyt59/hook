@@ -42,7 +42,13 @@ public class Bot {
     private long GUILD_ID;
     private long CHANNEL_ID;
 
-    public Bot(String token) {
+    /**
+     * @param guildId   the webhook's server, set before logging in so no event arrives without it
+     * @param channelId the channel (or thread) relayed to the game
+     */
+    public Bot(String token, long guildId, long channelId) {
+        this.GUILD_ID = guildId;
+        this.CHANNEL_ID = channelId;
         // replies echo player and mod names, never let them turn into pings
         MessageRequest.setDefaultMentions(EnumSet.noneOf(Message.MentionType.class));
         net.dv8tion.jda.api.JDA jda;
@@ -172,6 +178,8 @@ public class Bot {
 
     private record CachedMember(Long id, long expires) {}
 
+    private static final int MAX_CACHED_MEMBERS = 500;
+
     private final Map<String, CachedMember> memberCache = new ConcurrentHashMap<>();
     private volatile boolean memberSearchFailed = false;
 
@@ -187,6 +195,8 @@ public class Bot {
         if (cached != null && cached.expires() > System.currentTimeMillis()) return cached.id();
 
         Long id = searchMember(key);
+        // players can make up any number of @names, keep the cache from growing forever
+        if (memberCache.size() >= MAX_CACHED_MEMBERS) memberCache.clear();
         long ttl = id != null ? 10 * 60_000 : 60_000;
         memberCache.put(key, new CachedMember(id, System.currentTimeMillis() + ttl));
         return id;
