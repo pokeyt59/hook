@@ -90,7 +90,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           jar=$(ls build/libs/*.jar | grep -v -- '-sources.jar$')
-          gh release create "$GITHUB_REF_NAME" "$jar" --verify-tag --generate-notes
+          VERSION="${GITHUB_REF_NAME#v}"
+          # the matching CHANGELOG.md section is the release text, github's generated notes if there is none
+          awk -v v="## ${VERSION}" '$0 == v {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then notes=(--notes-file notes.md); else notes=(--generate-notes); fi
+          gh release create "$GITHUB_REF_NAME" "$jar" --verify-tag "${notes[@]}"
       # the Actions tab release button: tags the built commit and publishes the release in one go
       - name: publish release (manual)
         if: github.event_name == 'workflow_dispatch' && inputs.release != ''
@@ -99,5 +103,9 @@ jobs:
           RELEASE: ${{ inputs.release }}
         run: |
           jar=$(ls build/libs/*.jar | grep -v -- '-sources.jar$')
+          VERSION="${RELEASE#v}"
+          # the matching CHANGELOG.md section is the release text, github's generated notes if there is none
+          awk -v v="## ${VERSION}" '$0 == v {f=1; next} /^## / {f=0} f' CHANGELOG.md > notes.md
+          if [ -s notes.md ]; then notes=(--notes-file notes.md); else notes=(--generate-notes); fi
           gh release create "v${RELEASE#v}" "$jar" --target "$GITHUB_SHA" \
-            --title "dchook ${{ steps.version.outputs.version }}" --generate-notes
+            --title "dchook ${{ steps.version.outputs.version }}" "${notes[@]}"
