@@ -31,10 +31,7 @@ public class Bot {
         // replies echo player and mod names, never let them turn into pings
         MessageRequest.setDefaultMentions(EnumSet.noneOf(Message.MentionType.class));
         net.dv8tion.jda.api.JDA jda;
-        // GUILDS fills the server and channel cache, without it JDA silently drops every chat message
-        // (it only knows the guild from slash commands, which carry their own data)
-        jda = JDABuilder.createLight(token,
-                        EnumSet.of(GatewayIntent.GUILDS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
+        jda = JDABuilder.createLight(token, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
                 .addEventListeners(new ReadyEventListener(this))
                 .addEventListeners(new MessageReceivedListener(this))
                 .addEventListeners(new SlashCommandInteractionListener(this))

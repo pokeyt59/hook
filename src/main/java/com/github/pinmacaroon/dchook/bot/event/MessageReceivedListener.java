@@ -21,10 +21,14 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class MessageReceivedListener extends ListenerAdapter {
     private static final Pattern CUSTOM_EMOJI = Pattern.compile("<a?:(\\w+):\\d+>");
+
+    private static final Set<Long> IGNORED_CHANNELS = ConcurrentHashMap.newKeySet();
 
     private final Bot BOT;
 
@@ -37,7 +41,14 @@ public class MessageReceivedListener extends ListenerAdapter {
         if (event.getGuild().getIdLong() != this.BOT.getGUILD_ID()) return;
         if (event.getMessage().getAuthor().isBot()) return;
         MinecraftServer server = Hook.getGameServer();
-        if (event.getChannel().getIdLong() == this.BOT.getCHANNEL_ID() && server != null) {
+        if (event.getChannel().getIdLong() != this.BOT.getCHANNEL_ID()) {
+            // once per channel, so a wrong channel setup shows up in the log without flooding it
+            if (IGNORED_CHANNELS.add(event.getChannel().getIdLong()))
+                Hook.LOGGER.info("not relaying messages from #{} ({}), only from the webhook's channel ({})",
+                        event.getChannel().getName(), event.getChannel().getId(), this.BOT.getCHANNEL_ID());
+            return;
+        }
+        if (server != null) {
             if (event.getMessage().getContentStripped().endsWith("//") && ModConfigs.FUNCTIONS_ALLOWOOCMESSAGES) return;
             MutableComponent message = renderMessage(event);
             // JDA events arrive on JDA's threads, the player list must only be touched from the server thread
