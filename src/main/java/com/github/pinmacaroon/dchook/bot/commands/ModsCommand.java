@@ -1,13 +1,13 @@
 package com.github.pinmacaroon.dchook.bot.commands;
 
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.github.pinmacaroon.dchook.util.Templates;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.requests.RestAction;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.metadata.ModEnvironment;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,7 +31,7 @@ public class ModsCommand {
         if (mods_count.get() == 0) {
             response = ModConfigs.MESSAGES_BOT_MODS_NONE;
         } else {
-            response = MessageFormat.format(ModConfigs.MESSAGES_BOT_MODS_LIST, mods_count.get()) + "\n" + mod_list;
+            response = Templates.format(ModConfigs.MESSAGES_BOT_MODS_LIST, mods_count.get()) + "\n" + mod_list;
         }
         boolean ephemeral = event.getOption("ephemeral", false, OptionMapping::getAsBoolean);
         if (event.getOption("full", false, OptionMapping::getAsBoolean) && response.length() > 2000) {

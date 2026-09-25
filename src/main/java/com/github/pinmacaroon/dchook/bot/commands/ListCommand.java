@@ -2,15 +2,14 @@ package com.github.pinmacaroon.dchook.bot.commands;
 
 import com.github.pinmacaroon.dchook.Hook;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.github.pinmacaroon.dchook.util.Templates;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
-
-import java.text.MessageFormat;
 
 public class ListCommand {
     public static void run(SlashCommandInteractionEvent event) {
         StringBuilder message = new StringBuilder();
-        message.append(MessageFormat.format(
+        message.append(Templates.format(
                 ModConfigs.MESSAGES_BOT_LIST,
                 Hook.getGameServer().getPlayerCount(),
                 Hook.getGameServer().getMaxPlayers()

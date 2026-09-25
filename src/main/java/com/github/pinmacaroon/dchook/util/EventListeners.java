@@ -6,7 +6,6 @@ import net.dv8tion.jda.api.utils.MarkdownSanitizer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.message.v1.ServerMessageEvents;
 
-import java.text.MessageFormat;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -50,7 +49,7 @@ public class EventListeners {
             String content;
             XaeoWaypoint point = XaeoWaypoint.parse(message.signedContent());
             if(point != null){
-                content = MessageFormat.format(
+                content = Templates.format(
                         "*"+ModConfigs.MESSAGES_SERVER_WAYPOINT+"*",
                         point.name,
                         point.marker,
