@@ -86,6 +86,9 @@ java {
 }
 
 jar {
+	// the full jar, the published one is shrunk from it by the proguard task below
+	archiveClassifier = 'full'
+	destinationDirectory = layout.buildDirectory.dir("full")
 
 	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 	inputs.property "archivesName", project.base.archivesName
@@ -122,33 +125,29 @@ publishing {
 		//implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 	}
 }
-/*
-task myProguardTask(type: proguard.gradle.ProGuardTask) {
-	.....
-}
-
- */
-ext.baseCoordinates = "${project.name}-${project.version}"
+// the jar task builds the full fat jar into build/full, proguard shrinks it into build/libs under the normal name,
+// so CI and the updater pick up the small one. see proguard.pro for what is kept.
+def jmods = file("${System.getProperty('java.home')}/jmods")
 
 tasks.register('proguard', proguard.gradle.ProGuardTask) {
+	dependsOn tasks.named('jar')
+	onlyIf { jmods.isDirectory() }
 	configuration file('proguard.pro')
-
 	injars(tasks.named('jar', Jar).flatMap { it.archiveFile })
-
-	// Automatically handle the Java version of this build.
-	if (System.getProperty('java.version').startsWith('1.')) {
-		// Before Java 9, the runtime classes were packaged in a single jar file.
-		libraryjars "${System.getProperty('java.home')}/lib/rt.jar"
-	} else {
-		// As of Java 9, the runtime classes are packaged in modular jmod files.
-		libraryjars "${System.getProperty('java.home')}/jmods/java.base.jmod", jarfilter: '!**.jar', filter: '!module-info.class'
-		//libraryjars "${System.getProperty('java.home')}/jmods/....."
-	}
-
-	// This will include the Kotlin library jars
-	libraryjars sourceSets.main.compileClasspath
-
-	verbose
-
-	outjars(layout.buildDirectory.file("libs/${baseCoordinates}-minified.jar"))
+	libraryjars "${jmods}", jarfilter: '!**.jar', filter: '!module-info.class'
+	// minecraft, fabric and friends, but not the bundled libraries, those are program classes here
+	libraryjars(sourceSets.main.compileClasspath.filter { !configurations.extraLibs.files.contains(it) })
+	outjars(layout.buildDirectory.file("libs/${project.base.archivesName.get()}-${project.version}.jar"))
 }
+
+// without jmods (some JDK 25 builds leave them out) there's nothing to shrink against, ship the full jar
+tasks.register('copyFullJar', Copy) {
+	dependsOn tasks.named('jar')
+	onlyIf { !jmods.isDirectory() }
+	doFirst { logger.warn("no jmods in ${System.getProperty('java.home')}, publishing the full (unshrunk) jar") }
+	from(tasks.named('jar', Jar).flatMap { it.archiveFile })
+	into(layout.buildDirectory.dir("libs"))
+	rename { "${project.base.archivesName.get()}-${project.version}.jar" }
+}
+
+tasks.named('assemble') { dependsOn 'proguard', 'copyFullJar' }
