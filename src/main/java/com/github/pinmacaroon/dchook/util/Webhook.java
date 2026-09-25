@@ -15,6 +15,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Sends messages to the discord webhook in order, without blocking the calling (usually the server) thread.
@@ -187,10 +189,21 @@ public class Webhook {
 
     static JsonObject textPayload(String username, String content, String avatarUrl) {
         JsonObject body = new JsonObject();
-        body.addProperty("content", content);
+        body.addProperty("content", defuse(content));
         body.addProperty("username", username);
         if (avatarUrl != null) body.addProperty("avatar_url", avatarUrl);
         return body;
+    }
+
+    // @everyone, @here and <@id> / <@&id> / <#id> mention syntax, only when not glued to a word (me@here.com stays)
+    private static final Pattern MENTION = Pattern.compile("(?<![\\w@])@(?=everyone\\b|here\\b)|<(?=[@#])");
+
+    /**
+     * Puts a zero width space into anything discord would turn into a mention. allowed_mentions already stops the
+     * notification, but discord still draws @everyone like a ping, so the text itself can't be a mention.
+     */
+    static String defuse(String content) {
+        return MENTION.matcher(content).replaceAll(match -> Matcher.quoteReplacement(match.group() + "\u200B"));
     }
 
     static JsonObject withoutMentions(JsonObject body) {

@@ -19,5 +19,6 @@ This file is basically a checklist of things to do in the codebase.
 * parse discord timestamps (`<t:...>`) into readable text in game
 * `ServerMessageEvents.GAME_MESSAGE`: skip our own discord relays with a flag instead of the `<` check, skip action bar messages
 * the webhook and the bot can't mention @everyone, @here, roles or users anymore
+* `@everyone`/`@here` typed in game no longer even looks like a ping in discord (zero width space after the `@`)
 * the bot's status is configurable (`functions.bot.status.type` / `functions.bot.status.text`)
 * performance: webhook messages are sent without blocking the server thread
