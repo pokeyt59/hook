@@ -31,7 +31,10 @@ import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 
 public class SimpleConfig {
@@ -236,6 +239,40 @@ public class SimpleConfig {
      */
     public boolean isBroken() {
         return broken;
+    }
+
+    /**
+     * Appends the settings a newer version added to an existing config file, so they show up for people
+     * updating instead of silently running on their defaults.
+     *
+     * @param entries every setting as key -> its lines in the file (comments and key=default), in file order
+     * @param header  comment line put above the appended settings
+     */
+    public void addMissing( Map<String, String> entries, String header ) {
+        if( broken ) return;
+        String appendix = appendix( config, entries, header );
+        if( appendix.isEmpty() ) return;
+        List<String> added = entries.keySet().stream().filter( key -> !config.containsKey( key ) ).toList();
+        try {
+            Files.writeString( request.file.toPath(), appendix, StandardCharsets.UTF_8, StandardOpenOption.APPEND );
+            // read them back like any other line, so the file stays the single source of truth
+            appendix.lines().forEach( line -> parseConfigEntry( line, 0 ) );
+            LOGGER.info( "added {} new settings to {}.properties: {}", added.size(), request.filename, String.join( ", ", added ) );
+        } catch (IOException e) {
+            LOGGER.warn( "couldn't add the new settings {} to {}.properties, they use their defaults", added, request.filename, e );
+        }
+    }
+
+    /**
+     * @return the text to append for every entry that isn't in {@code present} yet, empty if nothing is missing
+     */
+    static String appendix( Map<String, String> present, Map<String, String> entries, String header ) {
+        StringBuilder text = new StringBuilder();
+        entries.forEach( (key, lines) -> {
+            if( !present.containsKey( key ) ) text.append( lines );
+        } );
+        if( text.isEmpty() ) return "";
+        return "\n# " + header + "\n" + text;
     }
 
     /**

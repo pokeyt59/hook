@@ -42,6 +42,7 @@ public class ModConfigs {
         createConfigs();
 
         CONFIG = SimpleConfig.of(Hook.MOD_ID).provider(configs).request();
+        CONFIG.addMissing(configs.getEntries(), "added by dchook " + Hook.VERSION + ":");
 
         assignConfigs();
     }

@@ -3,7 +3,9 @@ package com.github.pinmacaroon.dchook.conf;
 import com.mojang.datafixers.util.Pair;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings("rawtypes")
 public class ModConfigProvider implements SimpleConfig.DefaultConfig {
@@ -16,12 +18,23 @@ public class ModConfigProvider implements SimpleConfig.DefaultConfig {
 
     private final List<Pair> configsList = new ArrayList<>();
 
+    /**
+     * @return every setting as key -> its lines in the file, in file order
+     */
+    public Map<String, String> getEntries() {
+        return entries;
+    }
+
+    private final Map<String, String> entries = new LinkedHashMap<>();
+
     public void addKeyValuePair(Pair<String, ?> keyValuePair, String comment) {
         configsList.add(keyValuePair);
-        configContents +=
+        String lines =
                 "# " + comment + "\n" +
                 "# default: " + keyValuePair.getSecond() + "\n" +
                 keyValuePair.getFirst() + "=" + keyValuePair.getSecond() + "\n";
+        entries.put(keyValuePair.getFirst(), lines);
+        configContents += lines;
     }
 
     public void addDocumentationLine(String comment) {
