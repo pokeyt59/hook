@@ -12,6 +12,15 @@ class EmojisTest {
     }
 
     @Test
+    void emojiLinksFromOtherServersBecomeShortcodes() {
+        assertEquals("hi :2kissLumity2:", Emojis.toShortcodes("hi [2kissLumity2](https://cdn.discordapp.com/emojis/"
+                + "1192568648997543956.webp?size=48&animated=true&name=2kissLumity2&lossless=true)"));
+        assertEquals(":blob:", Emojis.toShortcodes("[:blob:](<https://cdn.discordapp.com/emojis/123.png>)"));
+        String link = "[docs](https://cdn.discordapp.com/attachments/1/2/file.png)";
+        assertEquals(link, Emojis.toShortcodes(link));
+    }
+
+    @Test
     void shortcodesBecomeEmojis() {
         assertEquals("hi 😂 🔥", Emojis.fromShortcodes("hi :joy: :fire:"));
         assertEquals("😂!", Emojis.fromShortcodes(":joy:!"));

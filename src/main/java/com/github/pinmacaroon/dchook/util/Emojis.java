@@ -12,6 +12,9 @@ import java.util.regex.Pattern;
  */
 public class Emojis {
     // :name: not glued to other text, so times (12:30:45) and things like a:b:c stay as they are
+    // an emoji the sender can't use natively (from another server) arrives as a link to its image
+    private static final Pattern EMOJI_LINK = Pattern.compile(
+            "\\[([^\\]\\n]{1,64})\\]\\(<?https://(?:cdn|media)\\.discordapp\\.(?:com|net)/emojis/\\d+\\.\\w+[^)\\s]*>?\\)");
     private static final Pattern SHORTCODE = Pattern.compile("(?<!\\w):([a-z0-9_+\\-]+):(?!\\w)");
 
     /**
@@ -25,6 +28,10 @@ public class Emojis {
      * 😀 → :grinning:, using discord's names so they match what people typed there
      */
     public static String toShortcodes(String text) {
+        if (text.contains("/emojis/")) {
+            text = EMOJI_LINK.matcher(text).replaceAll(match -> Matcher.quoteReplacement(
+                    ":" + match.group(1).replace(":", "") + ":"));
+        }
         if (!EmojiManager.containsAnyEmoji(text)) return text;
         return EmojiManager.replaceAllEmojis(text, Emojis::shortcode);
     }
