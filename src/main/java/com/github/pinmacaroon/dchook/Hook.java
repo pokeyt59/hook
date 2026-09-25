@@ -4,6 +4,7 @@ import com.github.pinmacaroon.dchook.bot.Bot;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import com.github.pinmacaroon.dchook.util.EventListeners;
 import com.github.pinmacaroon.dchook.util.Updater;
+import com.github.pinmacaroon.dchook.util.Webhook;
 import com.github.zafarkhaja.semver.Version;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -19,6 +20,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Random;
 import java.util.regex.Pattern;
@@ -41,12 +43,11 @@ public class Hook implements DedicatedServerModInitializer {
             "^https:\\/\\/(ptb\\.|canary\\.)?discord\\.com\\/api\\/webhooks\\/\\d+\\/.+$"
     );
 
-    public static URI WEBHOOK_URI; 
-    
-    public static volatile Bot BOT;
-    public static boolean BOT_ENABLED = false;
+    public static URI WEBHOOK_URI;
 
-    private boolean IS_THREAD = false;
+    public static volatile Bot BOT;
+    public static volatile boolean SERVER_STOPPED = false;
+
     private static MinecraftServer MINECRAFT_SERVER;
 
     public static MinecraftServer getGameServer() {
@@ -74,71 +75,68 @@ public class Hook implements DedicatedServerModInitializer {
             return;
         }
 
-        if(ModConfigs.FUNCTIONS_BOT_ENABLED) bottedStart();
-        else botlessStart();
-        
-        if(ModConfigs.IS_THREAD) {
-            IS_THREAD = true;
-            WEBHOOK_URI = URI.create(ModConfigs.WEBHOOK_URL + "?thread_id=" + ModConfigs.THREAD_ID);
-        } else {
-            WEBHOOK_URI = URI.create(ModConfigs.WEBHOOK_URL);
-        }
-        
-        try {    
-            HttpRequest get_webhook = HttpRequest.newBuilder()
-                    .GET()
-                    .uri(WEBHOOK_URI)
-                    .build();
+        WEBHOOK_URI = URI.create(ModConfigs.IS_THREAD
+                ? ModConfigs.WEBHOOK_URL + "?thread_id=" + ModConfigs.THREAD_ID
+                : ModConfigs.WEBHOOK_URL);
 
-            HttpResponse<String> response = HTTPCLIENT.send(get_webhook, HttpResponse.BodyHandlers.ofString());
-            int status = response.statusCode();
-            JsonObject body = JsonParser.parseString(response.body()).getAsJsonObject();
-            if(status != 200){
-                LOGGER.error(
-                        "the webhook was not found or couldn't reach discord servers! discord said: '{}'",
-                        body.get("message").getAsString()
-                );
-                return;
-            }
-            if (BOT_ENABLED) {
-                Thread bot_rutime_thread = new Thread(() -> {
-                    while (BOT == null) {
-                        Thread.onSpinWait();
-                    }
-                    BOT.setGUILD_ID(body.get("guild_id").getAsLong());
-                    if (IS_THREAD) {
-                        BOT.setCHANNEL_ID(Long.parseLong(ModConfigs.THREAD_ID));
-                    } else {
-                        BOT.setCHANNEL_ID(body.get("channel_id").getAsLong());
-                    }
-                });
-                bot_rutime_thread.start();
-            }
-        } catch (Exception e) {
-            LOGGER.error("{}:{}", e.getClass().getName(), e.getMessage());
-            throw new RuntimeException(e);
-        }
-
-        LOGGER.info("all checks succeeded, starting webhook managing! version: {}", VERSION);
         if(!ModConfigs.FUNCTIONS_PROMOTIONS_ENABLED){
             LOGGER.warn("promotions were disabled by config. please consider turning them back on to support the mod!");
         }
 
+        // messages queue up until the webhook is confirmed, so listeners can go in right away
         EventListeners.registerEventListeners();
+
+        // talking to discord takes a few seconds, the server doesn't have to wait for it
+        Thread startup = new Thread(Hook::connectToDiscord, "dchook-startup");
+        startup.setDaemon(true);
+        startup.start();
     }
 
-    private void botlessStart(){
-        LOGGER.info("two way chat has been disabled by the config (botless start)");
-    }
-
-    private void bottedStart(){
+    private static void connectToDiscord() {
+        JsonObject webhook;
         try {
-            BOT = new Bot(ModConfigs.FUNCTIONS_BOT_TOKEN);
-            BOT_ENABLED = true;
-        } catch (Exception e){
-            LOGGER.error("couldn't initialise bot, two way chat disabled! please check your bot token or send a bug report on github!");
-            LOGGER.error("{}:{}", e.getClass().getName(), e.getMessage());
-            e.printStackTrace();
+            HttpRequest get_webhook = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(WEBHOOK_URI)
+                    .timeout(Duration.ofSeconds(15))
+                    .build();
+            HttpResponse<String> response = HTTPCLIENT.send(get_webhook, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() / 100 == 4) {
+                LOGGER.error("the webhook was not found! discord said: '{}'", response.body());
+                Webhook.markReady(false);
+                return;
+            }
+            if (response.statusCode() != 200) {
+                throw new IllegalStateException("discord answered with status " + response.statusCode());
+            }
+            webhook = JsonParser.parseString(response.body()).getAsJsonObject();
+        } catch (Exception e) {
+            // most likely discord is down for a moment, sending is still worth trying
+            LOGGER.warn("couldn't check the webhook, messages will be sent anyway: {}", e.toString());
+            Webhook.markReady(true);
+            if (ModConfigs.FUNCTIONS_BOT_ENABLED)
+                LOGGER.error("two way chat needs the webhook check to succeed, it's disabled until the next restart");
+            return;
         }
+        Webhook.markReady(true);
+
+        if (ModConfigs.FUNCTIONS_BOT_ENABLED) {
+            try {
+                Bot bot = new Bot(ModConfigs.FUNCTIONS_BOT_TOKEN);
+                bot.setGUILD_ID(webhook.get("guild_id").getAsLong());
+                bot.setCHANNEL_ID(ModConfigs.IS_THREAD
+                        ? Long.parseLong(ModConfigs.THREAD_ID)
+                        : webhook.get("channel_id").getAsLong());
+                BOT = bot;
+                // the server may have stopped while the bot was logging in
+                if (SERVER_STOPPED) bot.stop();
+            } catch (Exception e) {
+                LOGGER.error("couldn't initialise bot, two way chat disabled! please check your bot token or send a bug report on github!", e);
+            }
+        } else {
+            LOGGER.info("two way chat has been disabled by the config (botless start)");
+        }
+
+        LOGGER.info("all checks succeeded, starting webhook managing! version: {}", VERSION);
     }
 }

@@ -30,6 +30,8 @@ public class Webhook {
     private record Pending(JsonObject body, CompletableFuture<Void> done) {}
 
     private static final BlockingQueue<Pending> QUEUE = new LinkedBlockingQueue<>(MAX_QUEUED);
+    // completed once the startup check knows whether the webhook exists
+    private static final CompletableFuture<Boolean> READY = new CompletableFuture<>();
 
     static {
         Thread worker = new Thread(Webhook::work, "dchook-webhook");
@@ -54,6 +56,14 @@ public class Webhook {
     }
 
     /**
+     * Lets queued messages go out once the webhook is confirmed. With {@code false} every message is dropped,
+     * since discord would reject them anyway.
+     */
+    public static void markReady(boolean usable) {
+        READY.complete(usable);
+    }
+
+    /**
      * @param avatarUrl may be null for the webhook's default avatar
      */
     public static CompletableFuture<Void> sendText(String username, String content, String avatarUrl) {
@@ -61,6 +71,14 @@ public class Webhook {
     }
 
     private static void work() {
+        try {
+            if (!READY.get()) {
+                Hook.LOGGER.error("the webhook isn't usable, not sending messages to discord");
+                while (true) QUEUE.take().done().complete(null);
+            }
+        } catch (Exception e) {
+            return;
+        }
         while (true) {
             List<Pending> batch = new ArrayList<>();
             try {

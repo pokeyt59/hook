@@ -40,6 +40,7 @@ public class EventListeners {
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             if (ModConfigs.MESSAGES_SERVER_STOPPED_ALLOWED)
                 awaitBriefly(Webhook.sendText("server", "**" + ModConfigs.MESSAGES_SERVER_STOPPED + "**", null));
+            Hook.SERVER_STOPPED = true;
             if(Hook.BOT != null) Hook.BOT.stop();
         });
 
