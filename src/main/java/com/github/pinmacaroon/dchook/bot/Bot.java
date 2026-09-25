@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.SelfUser;
+import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
 import net.dv8tion.jda.api.interactions.IntegrationType;
 import net.dv8tion.jda.api.interactions.InteractionContextType;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -30,7 +31,10 @@ public class Bot {
         // replies echo player and mod names, never let them turn into pings
         MessageRequest.setDefaultMentions(EnumSet.noneOf(Message.MentionType.class));
         net.dv8tion.jda.api.JDA jda;
-        jda = JDABuilder.createLight(token, EnumSet.of(GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
+        // GUILDS fills the server and channel cache, without it JDA silently drops every chat message
+        // (it only knows the guild from slash commands, which carry their own data)
+        jda = JDABuilder.createLight(token,
+                        EnumSet.of(GatewayIntent.GUILDS, GatewayIntent.GUILD_MESSAGES, GatewayIntent.MESSAGE_CONTENT))
                 .addEventListeners(new ReadyEventListener(this))
                 .addEventListeners(new MessageReceivedListener(this))
                 .addEventListeners(new SlashCommandInteractionListener(this))
@@ -120,6 +124,20 @@ public class Bot {
 
     public SelfUser getSelfUser() {
         return this.JDA.getSelfUser();
+    }
+
+    /**
+     * Logs whether the bot can read the chat channel, discord sends no messages from channels it can't see.
+     */
+    public void checkChannel() {
+        if (this.JDA == null) return;
+        GuildChannel channel = this.JDA.getGuildChannelById(CHANNEL_ID);
+        if (channel == null || !channel.getGuild().getSelfMember().hasAccess(channel)) {
+            Hook.LOGGER.error("the bot can't see the chat channel ({}), messages from discord won't reach the game!"
+                    + " invite it to that server and give it the View Channel permission there", CHANNEL_ID);
+            return;
+        }
+        Hook.LOGGER.info("relaying messages from #{} to the game", channel.getName());
     }
 
     public long getGUILD_ID() {

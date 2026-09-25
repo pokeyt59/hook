@@ -8,6 +8,7 @@ This file is basically a checklist of things to do in the codebase.
 
 ## Done
 
+* two-way chat: the bot never got the `GUILDS` intent, so JDA had no server cache and dropped every discord message
 * the `/time` reply and its weather words are configurable (`messages.bot.time*`)
 * discord custom emojis (`<:name:id>`) show up as `:name:` in game (JDA's `getContentDisplay` already does it,
   forwarded messages are converted by hand)

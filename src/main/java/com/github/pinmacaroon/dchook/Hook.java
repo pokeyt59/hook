@@ -127,6 +127,7 @@ public class Hook implements DedicatedServerModInitializer {
                 bot.setCHANNEL_ID(ModConfigs.IS_THREAD
                         ? Long.parseLong(ModConfigs.THREAD_ID)
                         : webhook.get("channel_id").getAsLong());
+                bot.checkChannel();
                 BOT = bot;
                 // the server may have stopped while the bot was logging in
                 if (SERVER_STOPPED) bot.stop();
