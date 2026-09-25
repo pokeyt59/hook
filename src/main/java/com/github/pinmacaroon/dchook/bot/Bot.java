@@ -8,6 +8,7 @@ import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.SelfUser;
 import net.dv8tion.jda.api.entities.channel.middleman.GuildChannel;
@@ -21,6 +22,7 @@ import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.messages.MessageRequest;
 
 import java.util.EnumSet;
+import java.util.stream.Collectors;
 
 public class Bot {
     private final JDA JDA;
@@ -128,10 +130,24 @@ public class Bot {
      */
     public void checkChannel() {
         if (this.JDA == null) return;
-        GuildChannel channel = this.JDA.getGuildChannelById(CHANNEL_ID);
-        if (channel == null || !channel.getGuild().getSelfMember().hasAccess(channel)) {
-            Hook.LOGGER.error("the bot can't see the chat channel ({}), messages from discord won't reach the game!"
-                    + " invite it to that server and give it the View Channel permission there", CHANNEL_ID);
+        Guild guild = this.JDA.getGuildById(GUILD_ID);
+        if (guild == null) {
+            Hook.LOGGER.error("the bot isn't in the webhook's discord server ({}), messages from discord won't reach the"
+                    + " game! invite it there. servers the bot is in: {}", GUILD_ID, this.JDA.getGuilds().stream()
+                    .map(g -> g.getName() + " (" + g.getId() + ")").collect(Collectors.joining(", ")));
+            return;
+        }
+        GuildChannel channel = guild.getGuildChannelById(CHANNEL_ID);
+        if (channel == null) {
+            Hook.LOGGER.error("the bot is in {}, but can't find the webhook's channel ({}) there, messages from discord"
+                    + " won't reach the game! give the bot the View Channel permission in it (check the category too)."
+                    + " channels the bot can see: {}", guild.getName(), CHANNEL_ID, guild.getTextChannels().stream()
+                    .limit(20).map(c -> "#" + c.getName()).collect(Collectors.joining(", ")));
+            return;
+        }
+        if (!guild.getSelfMember().hasAccess(channel)) {
+            Hook.LOGGER.error("the bot has no View Channel permission in #{}, messages from discord won't reach the"
+                    + " game! allow it for the bot or its role (check the category too)", channel.getName());
             return;
         }
         Hook.LOGGER.info("relaying messages from #{} to the game", channel.getName());

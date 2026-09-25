@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 public class MessageReceivedListener extends ListenerAdapter {
     private static final Pattern CUSTOM_EMOJI = Pattern.compile("<a?:(\\w+):\\d+>");
 
+    private static final Set<Long> IGNORED_GUILDS = ConcurrentHashMap.newKeySet();
     private static final Set<Long> IGNORED_CHANNELS = ConcurrentHashMap.newKeySet();
 
     private final Bot BOT;
@@ -38,7 +39,12 @@ public class MessageReceivedListener extends ListenerAdapter {
 
     @Override
     public void onMessageReceived(@NotNull MessageReceivedEvent event) {
-        if (event.getGuild().getIdLong() != this.BOT.getGUILD_ID()) return;
+        if (event.getGuild().getIdLong() != this.BOT.getGUILD_ID()) {
+            if (IGNORED_GUILDS.add(event.getGuild().getIdLong()))
+                Hook.LOGGER.info("not relaying messages from the discord server {} ({}), only from the webhook's ({})",
+                        event.getGuild().getName(), event.getGuild().getId(), this.BOT.getGUILD_ID());
+            return;
+        }
         if (event.getMessage().getAuthor().isBot()) return;
         MinecraftServer server = Hook.getGameServer();
         if (event.getChannel().getIdLong() != this.BOT.getCHANNEL_ID()) {
