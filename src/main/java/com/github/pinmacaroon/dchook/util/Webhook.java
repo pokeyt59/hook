@@ -1,7 +1,10 @@
 package com.github.pinmacaroon.dchook.util;
 
 import com.github.pinmacaroon.dchook.Hook;
+import com.github.pinmacaroon.dchook.bot.Bot;
+import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -9,8 +12,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -72,6 +77,32 @@ public class Webhook {
         return send(textPayload(username, content, avatarUrl));
     }
 
+    /**
+     * Like {@link #sendText}, but for player chat: @name of a discord member becomes a real ping of them
+     * (never @everyone, @here or roles), when the bot is running and functions.bot.pings is on.
+     */
+    public static CompletableFuture<Void> sendChat(String username, String content, String avatarUrl) {
+        JsonObject body = textPayload(username, content, avatarUrl);
+        body.addProperty(RESOLVE_MENTIONS, true);
+        return send(body);
+    }
+
+    // internal markers on queued bodies, removed before posting
+    private static final String RESOLVE_MENTIONS = "_dchook_resolve_mentions";
+    private static final String PINGED = "_dchook_pinged";
+
+    private static void resolveMentions(JsonObject body) {
+        if (body.remove(RESOLVE_MENTIONS) == null) return;
+        Bot bot = Hook.BOT;
+        if (bot == null || !ModConfigs.FUNCTIONS_BOT_PINGS) return;
+        Set<Long> pinged = new LinkedHashSet<>();
+        body.addProperty("content", Mentions.resolve(body.get("content").getAsString(), bot::findMemberId, pinged));
+        if (pinged.isEmpty()) return;
+        JsonArray ids = new JsonArray();
+        pinged.forEach(id -> ids.add(String.valueOf(id)));
+        body.add(PINGED, ids);
+    }
+
     private static void work() {
         try {
             if (!READY.get()) {
@@ -89,14 +120,28 @@ public class Webhook {
                 return;
             }
             QUEUE.drainTo(batch);
+            // before merging, mentions change the length
+            for (Pending pending : batch) {
+                try {
+                    resolveMentions(pending.body());
+                } catch (Exception e) {
+                    // never let a lookup problem stop the worker, the message just goes out without pings
+                    Hook.LOGGER.warn("couldn't resolve @pings in a message: {}", e.toString());
+                }
+            }
 
             for (List<Pending> group : merge(batch)) {
                 JsonObject body = group.getFirst().body();
+                JsonArray pinged = new JsonArray();
+                for (Pending pending : group) {
+                    JsonElement ids = pending.body().remove(PINGED);
+                    if (ids != null) ids.getAsJsonArray().forEach(id -> { if (!pinged.contains(id)) pinged.add(id); });
+                }
                 for (Pending other : group.subList(1, group.size())) {
                     body.addProperty("content", body.get("content").getAsString() + "\n"
                             + other.body().get("content").getAsString());
                 }
-                post(withoutMentions(body));
+                post(withoutMentions(body, pinged));
                 group.forEach(pending -> pending.done().complete(null));
             }
         }
@@ -207,8 +252,20 @@ public class Webhook {
     }
 
     static JsonObject withoutMentions(JsonObject body) {
+        return withoutMentions(body, new JsonArray());
+    }
+
+    /**
+     * @param users the only users that may be pinged (discord allows up to 100)
+     */
+    static JsonObject withoutMentions(JsonObject body, JsonArray users) {
         JsonObject allowedMentions = new JsonObject();
         allowedMentions.add("parse", new JsonArray());
+        if (!users.isEmpty()) {
+            JsonArray allowed = new JsonArray();
+            for (int i = 0; i < Math.min(users.size(), 100); i++) allowed.add(users.get(i));
+            allowedMentions.add("users", allowed);
+        }
         body.add("allowed_mentions", allowedMentions);
         return body;
     }

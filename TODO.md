@@ -7,6 +7,7 @@ This file is basically a checklist of things to do in the codebase.
 
 ## Done
 
+* `@name` in game pings that discord member (username, nickname or display name), @everyone/@here/roles never do (`functions.bot.pings`)
 * emojis: 😀 shows as `:grinning:` in game, `:grinning:` typed in game shows as 😀 on discord (`functions.emoji.shortcodes`)
 * the `/time` reply and its weather words are configurable (`messages.bot.time*`)
 * discord custom emojis (`<:name:id>`) show up as `:name:` in game (JDA's `getContentDisplay` already does it,

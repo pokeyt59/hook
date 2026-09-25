@@ -61,6 +61,7 @@ messages.server.starting.allowed=true
 | functions.update.channel         | release                                       | release                  | `release` (tagged GitHub releases) or `alpha` (latest build from GitHub Actions)       |
 | functions.update.auto            | false                                         | false                    | download updates automatically and install them when the server stops                  |
 | functions.update.repo            | pokeyt59/hook                                 | pokeyt59/hook            | GitHub repository (owner/name) updates are downloaded from                             |
+| functions.bot.pings              | true                                          | true                     | players can ping Discord members with `@name` in game (never @everyone, @here or roles) |
 | functions.emoji.shortcodes       | true                                          | true                     | Discord emojis show as `:name:` in game, `:name:` typed in game becomes the emoji on Discord |
 | functions.timestamp.zone         | (blank string)                                | the server's time zone   | time zone for Discord timestamps shown in game, e.g. `Europe/Berlin` or `UTC`          |
 | webhook.url                      | <https://discord.com/api/webhooks/000/ABCDEF> | (blank string)           | url of webhook                                                                         |

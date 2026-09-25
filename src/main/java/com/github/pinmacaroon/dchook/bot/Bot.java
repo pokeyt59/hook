@@ -5,6 +5,9 @@ import com.github.pinmacaroon.dchook.bot.event.MessageReceivedListener;
 import com.github.pinmacaroon.dchook.bot.event.ReadyEventListener;
 import com.github.pinmacaroon.dchook.bot.event.SlashCommandInteractionListener;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.Permission;
@@ -22,7 +25,16 @@ import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.dv8tion.jda.api.requests.restaction.CommandListUpdateAction;
 import net.dv8tion.jda.api.utils.messages.MessageRequest;
 
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.EnumSet;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public class Bot {
@@ -156,6 +168,67 @@ public class Bot {
             return;
         }
         Hook.LOGGER.info("relaying messages from #{} to the game", channel.getName());
+    }
+
+    private record CachedMember(Long id, long expires) {}
+
+    private final Map<String, CachedMember> memberCache = new ConcurrentHashMap<>();
+    private volatile boolean memberSearchFailed = false;
+
+    /**
+     * Finds a member of the chat's server by username, server nickname or display name (ignoring case), through
+     * discord's member search so no extra intent is needed. Answers are cached for a while, misses too.
+     *
+     * @return the user id, or null if nobody has that name
+     */
+    public Long findMemberId(String name) {
+        String key = name.toLowerCase(Locale.ROOT);
+        CachedMember cached = memberCache.get(key);
+        if (cached != null && cached.expires() > System.currentTimeMillis()) return cached.id();
+
+        Long id = searchMember(key);
+        long ttl = id != null ? 10 * 60_000 : 60_000;
+        memberCache.put(key, new CachedMember(id, System.currentTimeMillis() + ttl));
+        return id;
+    }
+
+    private Long searchMember(String name) {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .GET()
+                    .uri(URI.create("https://discord.com/api/v10/guilds/" + GUILD_ID + "/members/search?limit=10&query="
+                            + URLEncoder.encode(name, StandardCharsets.UTF_8)))
+                    .header("Authorization", "Bot " + ModConfigs.FUNCTIONS_BOT_TOKEN.strip())
+                    .timeout(Duration.ofSeconds(5))
+                    .build();
+            HttpResponse<String> response = Hook.HTTPCLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() != 200) {
+                if (!memberSearchFailed) {
+                    memberSearchFailed = true;
+                    Hook.LOGGER.warn("couldn't look up discord members for @pings (status {}): {}",
+                            response.statusCode(), response.body());
+                }
+                return null;
+            }
+            Long byNick = null, byDisplayName = null;
+            for (JsonElement element : JsonParser.parseString(response.body()).getAsJsonArray()) {
+                JsonObject member = element.getAsJsonObject();
+                JsonObject user = member.getAsJsonObject("user");
+                long id = user.get("id").getAsLong();
+                if (name.equalsIgnoreCase(string(user, "username"))) return id;
+                if (byNick == null && name.equalsIgnoreCase(string(member, "nick"))) byNick = id;
+                if (byDisplayName == null && name.equalsIgnoreCase(string(user, "global_name"))) byDisplayName = id;
+            }
+            return byNick != null ? byNick : byDisplayName;
+        } catch (Exception e) {
+            Hook.LOGGER.warn("couldn't look up the discord member '{}' for a @ping: {}", name, e.toString());
+            return null;
+        }
+    }
+
+    private static String string(JsonObject object, String key) {
+        JsonElement value = object.get(key);
+        return value == null || value.isJsonNull() ? null : value.getAsString();
     }
 
     public long getGUILD_ID() {

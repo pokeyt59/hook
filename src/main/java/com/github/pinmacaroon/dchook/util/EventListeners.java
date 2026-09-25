@@ -62,7 +62,7 @@ public class EventListeners {
                 content = MarkdownSanitizer.escape(text);
             }
 
-            Webhook.sendText(sender.getName().getString(), content,
+            Webhook.sendChat(sender.getName().getString(), content,
                     "https://crafthead.net/helm/" + message.sender().toString());
         });
 

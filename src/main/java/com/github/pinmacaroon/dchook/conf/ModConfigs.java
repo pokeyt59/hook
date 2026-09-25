@@ -36,6 +36,7 @@ public class ModConfigs {
     public static String FUNCTIONS_BOT_STATUS_TEXT;
     public static ZoneId FUNCTIONS_TIMESTAMP_ZONE;
     public static boolean FUNCTIONS_EMOJI_SHORTCODES;
+    public static boolean FUNCTIONS_BOT_PINGS;
     public static boolean FUNCTIONS_UPDATE;
     public static String FUNCTIONS_UPDATE_CHANNEL;
     public static boolean FUNCTIONS_UPDATE_AUTO;
@@ -62,6 +63,7 @@ public class ModConfigs {
         configs.addKeyValuePair(new Pair<>("functions.promotions.enabled", true), "are tips and hints/promotion embeds allowed to be sent to Discord");
         configs.addKeyValuePair(new Pair<>("functions.bot.enabled", true), "is two-way chat (the bot) enabled?");
         configs.addKeyValuePair(new Pair<>("functions.bot.token", "TOKEN"), "bot token");
+        configs.addKeyValuePair(new Pair<>("functions.bot.pings", true), "players can ping discord members with @name in game (needs the bot, @everyone, @here and roles never ping)");
         configs.addKeyValuePair(new Pair<>("functions.bot.status.type", "watching"), "bot status type: playing, watching, listening, competing, custom or none");
         configs.addKeyValuePair(new Pair<>("functions.bot.status.text", "over this server (literally 1984)"), "bot status text");
         configs.addKeyValuePair(new Pair<>("functions.timestamp.zone", ""), "time zone for discord timestamps shown in game, e.g. Europe/Berlin or UTC. empty uses the server's zone");
@@ -136,6 +138,7 @@ public class ModConfigs {
 
         FUNCTIONS_BOT_ENABLED = CONFIG.getOrDefault("functions.bot.enabled", false);
         FUNCTIONS_BOT_TOKEN = CONFIG.getOrDefault("functions.bot.token", "");
+        FUNCTIONS_BOT_PINGS = CONFIG.getOrDefault("functions.bot.pings", true);
         FUNCTIONS_BOT_STATUS_TYPE = CONFIG.getOrDefault("functions.bot.status.type", "watching");
         FUNCTIONS_BOT_STATUS_TEXT = CONFIG.getOrDefault("functions.bot.status.text", "over this server (literally 1984)");
         String zone = CONFIG.getOrDefault("functions.timestamp.zone", "");

@@ -1,5 +1,6 @@
 package com.github.pinmacaroon.dchook.util;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,16 @@ class WebhookPayloadTest {
         assertEquals(0, body.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").size());
         assertEquals("@\u200Beveryone hi", body.get("content").getAsString());
         assertFalse(body.has("avatar_url"));
+    }
+
+    @Test
+    void onlyListedUsersCanBePinged() {
+        JsonArray users = new JsonArray();
+        users.add("11");
+        JsonObject allowed = Webhook.withoutMentions(Webhook.textPayload("Steve", "<@11> @everyone", null), users)
+                .getAsJsonObject("allowed_mentions");
+        assertEquals(0, allowed.getAsJsonArray("parse").size());
+        assertEquals("11", allowed.getAsJsonArray("users").get(0).getAsString());
     }
 
     @Test
