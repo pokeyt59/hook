@@ -7,6 +7,7 @@ import com.github.pinmacaroon.dchook.bot.event.SlashCommandInteractionListener;
 import com.github.pinmacaroon.dchook.conf.ModConfigs;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.Permission;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
@@ -132,9 +133,13 @@ public class Bot {
         if (this.JDA == null) return;
         Guild guild = this.JDA.getGuildById(GUILD_ID);
         if (guild == null) {
+            String invite = this.JDA.getInviteUrl(Permission.VIEW_CHANNEL, Permission.MESSAGE_SEND,
+                    Permission.MESSAGE_HISTORY);
+            if (!invite.contains("applications.commands")) invite = invite.replace("scope=bot", "scope=bot+applications.commands");
             Hook.LOGGER.error("the bot isn't in the webhook's discord server ({}), messages from discord won't reach the"
-                    + " game! invite it there. servers the bot is in: {}", GUILD_ID, this.JDA.getGuilds().stream()
-                    .map(g -> g.getName() + " (" + g.getId() + ")").collect(Collectors.joining(", ")));
+                    + " game! invite it with this link: {} (servers the bot is in: {})", GUILD_ID, invite,
+                    this.JDA.getGuilds().isEmpty() ? "none" : this.JDA.getGuilds().stream()
+                            .map(g -> g.getName() + " (" + g.getId() + ")").collect(Collectors.joining(", ")));
             return;
         }
         GuildChannel channel = guild.getGuildChannelById(CHANNEL_ID);

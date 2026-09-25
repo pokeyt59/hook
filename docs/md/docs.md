@@ -175,6 +175,9 @@ Create a Discord Application:
 13. On the same page, under *Install Link*, open the Discord Provided Link in a new browser tab, and add the bot to your server;
 14. If the bot successfully joins your server, then you should proceed to the next steps!
 
+If the bot doesn't show up in your server's member list, messages only go from Minecraft to Discord. The server log
+then says `the bot isn't in the webhook's discord server` and prints an invite link for it.
+
 Set the mod up:
 
 1. Open the configuration file in `/config/dchook.properties`;
