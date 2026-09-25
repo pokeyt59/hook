@@ -33,3 +33,10 @@
 -dontwarn org.jetbrains.annotations.**
 # MethodHandle.invoke is signature polymorphic, proguard can't model it
 -dontwarn java.lang.invoke.MethodHandle
+# the mod's own references to the game and loader (they're provided at runtime)
+-dontwarn net.minecraft.**
+-dontwarn net.fabricmc.**
+-dontwarn com.mojang.**
+# anything left is a reference inside the bundled libraries to optional code they never load here. nothing is renamed
+# or optimized, so a warning can't break behaviour, and the published jar is smoke tested
+-ignorewarnings
