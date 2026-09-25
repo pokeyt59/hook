@@ -18,6 +18,10 @@ public class ModConfigs {
     public static String MESSAGES_BOT_LIST;
     public static String MESSAGES_BOT_MODS_LIST;
     public static String MESSAGES_BOT_MODS_NONE;
+    public static String MESSAGES_BOT_TIME;
+    public static String MESSAGES_BOT_TIME_CLEAR;
+    public static String MESSAGES_BOT_TIME_RAIN;
+    public static String MESSAGES_BOT_TIME_THUNDER;
     public static boolean IS_THREAD;
     public static boolean FUNCTIONS_ALLOWOOCMESSAGES;
     public static boolean MESSAGES_SERVER_STARTING_ALLOWED;
@@ -90,7 +94,13 @@ public class ModConfigs {
         configs.addKeyValuePair(new Pair<>("messages.bot.list", "There are currently **{0}**/{1} players online: "), "the list command preamble message\n# {0}: online players\n# {1}: max players");
         configs.addKeyValuePair(new Pair<>("messages.bot.mods.list", "The server currently has {0} required mods: "), "the mods command preamble message\n# {0}: number of mods");
         configs.addKeyValuePair(new Pair<>("messages.bot.mods.none", "The server currently has no required mods, you can join with a vanilla client!"), "the mods command message when no mods are needed by the client");
-        configs.addDocumentationLine("note: the time command cannot be customised yet because im lazy :3");
+        configs.addKeyValuePair(
+                new Pair<>("messages.bot.time", "The current in-game time in the overworld is **{0}**! The weather is {1}!"),
+                "the time command message\n# {0}: time of day (HH:mm)\n# {1}: weather, one of the three messages below\n# {2}: day number (like /time query day)"
+        );
+        configs.addKeyValuePair(new Pair<>("messages.bot.time.clear", "clear"), "the time command's weather when it's clear");
+        configs.addKeyValuePair(new Pair<>("messages.bot.time.rain", "rainy"), "the time command's weather when it rains");
+        configs.addKeyValuePair(new Pair<>("messages.bot.time.thunder", "rainy and thundering"), "the time command's weather during a thunderstorm");
 
         configs.addBlankLine();
         configs.addDocumentationLine("Something didn't work? See the documentation or report an issue at this url: <" + Hook.DOCS_URL + ">!");
@@ -108,6 +118,10 @@ public class ModConfigs {
         MESSAGES_BOT_LIST = CONFIG.getOrDefault("messages.bot.list", "messages.bot.list");
         MESSAGES_BOT_MODS_LIST = CONFIG.getOrDefault("messages.bot.mods.list", "messages.bot.mods.list");
         MESSAGES_BOT_MODS_NONE = CONFIG.getOrDefault("messages.bot.mods.none", "messages.bot.mods.none");
+        MESSAGES_BOT_TIME = CONFIG.getOrDefault("messages.bot.time", "The current in-game time in the overworld is **{0}**! The weather is {1}!");
+        MESSAGES_BOT_TIME_CLEAR = CONFIG.getOrDefault("messages.bot.time.clear", "clear");
+        MESSAGES_BOT_TIME_RAIN = CONFIG.getOrDefault("messages.bot.time.rain", "rainy");
+        MESSAGES_BOT_TIME_THUNDER = CONFIG.getOrDefault("messages.bot.time.thunder", "rainy and thundering");
         FUNCTIONS_ALLOWOOCMESSAGES = CONFIG.getOrDefault("functions.allow_ooc_messages", false);
 
         MESSAGES_SERVER_STARTING_ALLOWED = CONFIG.getOrDefault("messages.server.starting.allowed", false);
