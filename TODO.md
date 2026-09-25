@@ -4,10 +4,17 @@ This file is basically a checklist of things to do in the codebase.
 
 ## Chores
 
-* make the `/time` command's reply configurable like the other messages
-* render discord custom emojis (`<:name:id>`) as `:name:` in game
+* show unicode emojis (😀) as `:shortcode:` in game, minecraft's font can't draw most of them
 
 ## Done
+
+* the `/time` reply and its weather words are configurable (`messages.bot.time*`)
+* discord custom emojis (`<:name:id>`) show up as `:name:` in game (JDA's `getContentDisplay` already does it,
+  forwarded messages are converted by hand)
+* new settings are appended to existing config files on update
+* configurable messages keep apostrophes and don't group numbers (waypoints showed `1,500`)
+* discord messages in game: server nicknames, attachment/sticker labels, replies to deleted messages and forwarded
+  messages no longer get lost
 
 * parse discord timestamps (`<t:...>`) into readable text in game
 * `ServerMessageEvents.GAME_MESSAGE`: skip our own discord relays with a flag instead of the `<` check, skip action bar messages

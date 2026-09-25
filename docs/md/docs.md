@@ -23,7 +23,7 @@ The software itself is licensed under the MIT license. Dependencies' licence may
 
 ## `dchook.properties`
 
-`dchook.properties` is a configuration file generated to and expected from the `/config/` directory of your server root. If it's not found, it will be generated using default values.
+`dchook.properties` is a configuration file generated to and expected from the `/config/` directory of your server root. If it's not found, it will be generated using default values. When an update adds new settings, they are appended to the bottom of your existing file with their defaults (the log says which), your own values are never touched.
 
 ### Syntax
 
@@ -71,9 +71,16 @@ messages.server.starting.allowed=true
 | messages.server.stopped.allowed  | true                                          | false                    | stop message allowed?                                                                  |
 | messages.server.started.allowed  | true                                          | false                    | opened/fully started message                                                           |
 | messages.server.stopping.allowed | true                                          | false                    | stopping message allowed?                                                              |
+| messages.bot.time                | The current in-game time in the overworld is \*\*{0}\*\*! The weather is {1}! | (same as default) | `/time` reply. `{0}`: time of day (HH:mm), `{1}`: weather, `{2}`: day number (like `/time query day`) |
+| messages.bot.time.clear          | clear                                         | clear                    | `/time` weather when it's clear                                                        |
+| messages.bot.time.rain           | rainy                                         | rainy                    | `/time` weather when it rains                                                          |
+| messages.bot.time.thunder        | rainy and thundering                          | rainy and thundering     | `/time` weather during a thunderstorm                                                  |
 
 1. default, as in it's the value generated with the file
 2. fallback, as in if the key isn't found, this value will be used instead
+
+Messages with placeholders (`{0}`, `{1}`, ...) are filled in as written: apostrophes are kept and numbers aren't
+grouped (`1500`, not `1,500`).
 
 ## Features
 
@@ -83,7 +90,9 @@ Out-of-Character messages. Ending a message with double slashes (`//`) will tell
 
 ### Two-Way Hook
 
-Send a message in the desired Discord channel, and make that message appear in game!
+Send a message in the desired Discord channel, and make that message appear in game! Senders show up with their
+server nickname, custom emojis as `:name:`, timestamps as readable times, and images, videos, files and stickers as
+`[image: cat.png]`-style labels (click an attachment label to open it). Replies and forwarded messages are shown too.
 
 ### Utility Commands
 
